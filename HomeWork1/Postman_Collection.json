@@ -1,0 +1,376 @@
+{
+  "info": {
+    "name": "Melody Playlist API",
+    "description": "Collection for testing all Music Melody and Playlist APIs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. HELLO WORLD",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/v1/api/hello",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "v1",
+            "api",
+            "hello"
+          ]
+        },
+        "description": "Test endpoint - returns Hello World message"
+      }
+    },
+    {
+      "name": "2. GET - Get All Melodies",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/v1/api/melodies",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "v1",
+            "api",
+            "melodies"
+          ]
+        },
+        "description": "Retrieve all melodies from the database"
+      }
+    },
+    {
+      "name": "3. GET - Get Melody By Name",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/v1/api/melodies/Culori",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "v1",
+            "api",
+            "melodies",
+            "Culori"
+          ]
+        },
+        "description": "Retrieve a specific melody by its name."
+      }
+    },
+    {
+      "name": "4. POST - Create Melody (Orizont)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Orizont\",\n  \"genre\": \"Rock\",\n  \"album\": \"Orizont\",\n  \"artist\": \"COMA\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/v1/api/melody",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "v1",
+            "api",
+            "melody"
+          ]
+        },
+        "description": "Create a new melody. Create this first before trying to fetch it or add to playlists."
+      }
+    },
+    {
+      "name": "5. POST - Create Melody (In Gol)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"In Gol\",\n  \"genre\": \"Rock\",\n  \"album\": \"Pietre In Alb\",\n  \"artist\": \"Luna Amara\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/v1/api/melody",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "v1",
+            "api",
+            "melody"
+          ]
+        },
+        "description": "Create another example melody"
+      }
+    },
+    {
+      "name": "6. POST - Create Melody (Culori)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Culori\",\n  \"genre\": \"Rock\",\n  \"album\": \"Nerostitele\",\n  \"artist\": \"COMA\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/v1/api/melody",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "v1",
+            "api",
+            "melody"
+          ]
+        },
+        "description": "Create another example melody"
+      }
+    },
+    {
+      "name": "7. PUT - Update Melody (Orizont)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Orizont\",\n  \"genre\": \"Rock\",\n  \"album\": \"Orizont Album\",\n  \"artist\": \"COMA\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/v1/api/melody?name=Orizont",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "v1",
+            "api",
+            "melody"
+          ],
+          "query": [
+            {
+              "key": "name",
+              "value": "Orizont"
+            }
+          ]
+        },
+        "description": "Update an existing melody by name. Use the 'name' query parameter to specify which melody to update."
+      }
+    },
+    {
+      "name": "8. DELETE - Delete Melody (In Gol)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/v1/api/melody?name=In Gol",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "v1",
+            "api",
+            "melody"
+          ],
+          "query": [
+            {
+              "key": "name",
+              "value": "In Gol"
+            }
+          ]
+        },
+        "description": "Delete a melody by its name using the 'name' query parameter."
+      }
+    },
+    {
+      "name": "9. POST - Create Playlist",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"My Favorites\",\n  \"melodyNames\": [\n    \"Culori\",\n    \"In Gol\"\n  ],\n  \"description\": \"A collection of classic rock songs\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/v1/api/playlist",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "v1",
+            "api",
+            "playlist"
+          ]
+        },
+        "description": "Create a new playlist. Make sure the melody names in the melodyNames array exist first. Only 'Imagine' and 'Bohemian Rhapsody' exist after step 8."
+      }
+    },
+    {
+      "name": "10. POST - Create Playlist (Invalid Melody)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Invalid Playlist\",\n  \"melodyNames\": [\n    \"Chip\",\n    \"NonExistentSong\"\n  ],\n  \"description\": \"This should fail because NonExistentSong doesn't exist\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/v1/api/playlist",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "v1",
+            "api",
+            "playlist"
+          ]
+        },
+        "description": "Test invalid playlist creation - should fail with 400 error because NonExistentSong doesn't exist"
+      }
+    },
+    {
+      "name": "11. PUT - Update Playlist",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"My Favorite Classics\",\n  \"melodyNames\": [\n    \"Orizont\"\n  ],\n  \"description\": \"Updated collection with only Imagine\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/v1/api/playlist?name=My Favorites",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "v1",
+            "api",
+            "playlist"
+          ],
+          "query": [
+            {
+              "key": "name",
+              "value": "My Favorites"
+            }
+          ]
+        },
+        "description": "Update an existing playlist by name. Use the 'name' query parameter to specify which playlist to update."
+      }
+    },
+    {
+      "name": "12. DELETE - Delete Playlist",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/v1/api/playlist?name=My Favorites",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "v1",
+            "api",
+            "playlist"
+          ],
+          "query": [
+            {
+              "key": "name",
+              "value": "My Favorites"
+            }
+          ]
+        },
+        "description": "Delete a playlist by its name using the 'name' query parameter."
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000"
+    }
+  ]
+}
+

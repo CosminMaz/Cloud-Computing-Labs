@@ -1,27 +1,26 @@
 package com.mover.domain.dto;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
 import java.util.Objects;
 
 @AllArgsConstructor
 @Getter
 @Setter
-public class Melody {
+public class Playlist {
     private String name;
-    private String genre;
-    private String album;
-    private String artist;
+    private List<String> melodyNames;
+    private String description;
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Melody melody = (Melody) o;
-        return Objects.equals(name, melody.name);
+        Playlist playlist = (Playlist) o;
+        return Objects.equals(name, playlist.name);
     }
 
     @Override
@@ -29,3 +28,4 @@ public class Melody {
         return Objects.hash(name);
     }
 }
+
