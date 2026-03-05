@@ -28,7 +28,7 @@ public class postMelody extends ApiHandler {
                 .anyMatch(m -> m.getName().equalsIgnoreCase(melody.getName()));
 
         if(exists) {
-            sendBadRequest(exchange);
+            sendBadRequest(exchange, "Melody already exists");
             return;
         }
 
