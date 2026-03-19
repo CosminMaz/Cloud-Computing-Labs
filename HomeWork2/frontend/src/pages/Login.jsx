@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import './Auth.css'
 
-const API = 'http://localhost:8080'
+const API = 'http://localhost:9000/api'
 
 export default function Login() {
   const [form, setForm] = useState({ username: '', password: '' })
@@ -18,7 +18,7 @@ export default function Login() {
     setError('')
     setLoading(true)
     try {
-      const res = await fetch(`${API}/login`, {
+      const res = await fetch(`${API}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),

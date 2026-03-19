@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import './Auth.css'
 
-const API = 'http://localhost:8080'
+const API = 'http://localhost:9000/api'
 
 export default function Register() {
   const [form, setForm] = useState({
@@ -22,7 +22,7 @@ export default function Register() {
     setError('')
     setLoading(true)
     try {
-      const res = await fetch(`${API}/register`, {
+      const res = await fetch(`${API}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),

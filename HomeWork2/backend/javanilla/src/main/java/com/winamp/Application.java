@@ -10,13 +10,14 @@ import com.winamp.api.post.postMelody;
 import com.winamp.api.post.postPlaylist;
 import com.winamp.api.put.putMelody;
 import com.winamp.api.put.putPlaylist;
-import com.winamp.domain.dto.Melody;
+import com.winamp.db.DbStore;
 import com.winamp.domain.dto.Playlist;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -24,11 +25,15 @@ public class Application {
     private final String baseApiPath = "/v1/api/";
     private final HttpServer server;
 
-    private static Set<Melody> melodies;
+    private final DbStore db;
     private static Set<Playlist> playlists;
 
-    Application() throws IOException {
-        melodies = new HashSet<>();
+    Application() throws IOException, SQLException {
+        String dbUrl = System.getenv("DATABASE_URL");
+        if (dbUrl == null || dbUrl.isBlank()) {
+            throw new IllegalStateException("DATABASE_URL environment variable is not set");
+        }
+        db = new DbStore(dbUrl);
         playlists = new HashSet<>();
 
         int serverPort = 8000;
@@ -59,7 +64,7 @@ public class Application {
         server.createContext(baseApiPath + "melodies", exchange -> {
             try {
                 if ("GET".equals(exchange.getRequestMethod())) {
-                    getAllMelodies.handleGet(exchange, melodies);
+                    getAllMelodies.handleGet(exchange, db);
                 } else {
                     sendMethodNotAllowed(exchange);
                 }
@@ -74,21 +79,21 @@ public class Application {
                 String method = exchange.getRequestMethod();
 
                 if ("POST".equals(method)) {
-                    postMelody.handlePost(exchange, melodies);
+                    postMelody.handlePost(exchange, db);
                 } else if ("PUT".equals(method)) {
                     String name = getQueryParam(exchange, "name");
                     if (name == null || name.isEmpty()) {
                         sendBadRequest(exchange, "Missing 'name' query parameter");
                         return;
                     }
-                    putMelody.handlePut(exchange, melodies, name);
+                    putMelody.handlePut(exchange, db, name);
                 } else if ("DELETE".equals(method)) {
                     String name = getQueryParam(exchange, "name");
                     if (name == null || name.isEmpty()) {
                         sendBadRequest(exchange, "Missing 'name' query parameter");
                         return;
                     }
-                    deleteMelody.handleDelete(exchange, melodies, name);
+                    deleteMelody.handleDelete(exchange, db, name);
                 } else {
                     sendMethodNotAllowed(exchange);
                 }
@@ -111,7 +116,7 @@ public class Application {
 
                     // URL decode the name
                     name = java.net.URLDecoder.decode(name, StandardCharsets.UTF_8);
-                    getMelodyByName.handleGet(exchange, melodies, name);
+                    getMelodyByName.handleGet(exchange, db, name);
                 } else {
                     sendMethodNotAllowed(exchange);
                 }
@@ -126,14 +131,14 @@ public class Application {
                 String method = exchange.getRequestMethod();
 
                 if ("POST".equals(method)) {
-                    postPlaylist.handlePost(exchange, melodies, playlists);
+                    postPlaylist.handlePost(exchange, db, playlists);
                 } else if ("PUT".equals(method)) {
                     String name = getQueryParam(exchange, "name");
                     if (name == null || name.isEmpty()) {
                         sendBadRequest(exchange, "Missing 'name' query parameter");
                         return;
                     }
-                    putPlaylist.handlePut(exchange, melodies, playlists, name);
+                    putPlaylist.handlePut(exchange, db, playlists, name);
                 } else if ("DELETE".equals(method)) {
                     String name = getQueryParam(exchange, "name");
                     if (name == null || name.isEmpty()) {

@@ -48,8 +48,16 @@ type UpdateRequest struct {
 
 var (
 	db     *pgxpool.Pool
-	secret = []byte(getEnv("JWT_SECRET", "winamp-jwt-secret-2026"))
+	secret = []byte(mustEnv("JWT_SECRET"))
 )
+
+func mustEnv(key string) string {
+	v := os.Getenv(key)
+	if v == "" {
+		log.Fatalf("required environment variable %s is not set", key)
+	}
+	return v
+}
 
 func getEnv(key, fallback string) string {
 	if v := os.Getenv(key); v != "" {
@@ -241,7 +249,7 @@ func deleteUserHandler(c *gin.Context) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 func main() {
-	dsn := getEnv("DATABASE_URL", "postgres://winamp:winamp_secret@localhost:5432/winamp?sslmode=disable")
+	dsn := mustEnv("DATABASE_URL")
 	port := getEnv("PORT", "8080")
 
 	ctx := context.Background()

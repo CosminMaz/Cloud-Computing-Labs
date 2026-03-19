@@ -3,40 +3,28 @@ package com.winamp.api.put;
 import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
 import com.winamp.api.base.ApiHandler;
+import com.winamp.db.DbStore;
 import com.winamp.domain.dto.Melody;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public class putMelody extends ApiHandler {
-    public static void handlePut(HttpExchange exchange, Set<Melody> melodies, String name) throws Exception {
-        // Read the request body
+    public static void handlePut(HttpExchange exchange, DbStore db, String name) throws Exception {
         BufferedReader reader = new BufferedReader(
                 new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8)
         );
         String body = reader.lines().collect(Collectors.joining("\n"));
 
-        // Parse JSON to Melody object
         Gson gson = new Gson();
         Melody updatedMelody = gson.fromJson(body, Melody.class);
 
-        // Find the existing melody
-        Optional<Melody> existingMelody = melodies.stream()
-                .filter(m -> m.getName().equalsIgnoreCase(name))
-                .findFirst();
-
-        if (existingMelody.isEmpty()) {
+        if (!db.updateMelody(name, updatedMelody)) {
             sendNotFound(exchange, "Melody not found: " + name);
             return;
         }
-
-        // Remove old melody and add updated one
-        melodies.remove(existingMelody.get());
-        melodies.add(updatedMelody);
 
         String response = gson.toJson(updatedMelody);
         sendOk(exchange, response);
