@@ -1,0 +1,9 @@
+runtime: java17
+env: standard
+
+env_variables:
+  GCP_PROJECT_ID: "dgaspc-iasi-portal"
+  DB_PASSWORD: "YOUR_DB_PASSWORD"
+
+beta_settings:
+  cloud_sql_instances: "dgaspc-iasi-portal:europe-west1:dgaspc-db"

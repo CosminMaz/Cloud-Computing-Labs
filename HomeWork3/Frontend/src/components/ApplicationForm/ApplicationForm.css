@@ -1,0 +1,494 @@
+.app-form__wrapper {
+  max-width: 660px;
+  margin: 32px auto;
+  padding: 0 20px;
+}
+
+.app-form__card {
+  background: #ffffff;
+  border: 1px solid #e5e0d8;
+  border-radius: 12px;
+  padding: 32px;
+}
+
+/* Step indicator */
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 32px;
+  gap: 0;
+}
+
+.step-indicator__item {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.step-indicator__line {
+  width: 60px;
+  height: 2px;
+  background: #e5e0d8;
+  margin: 0 8px;
+}
+
+.step-indicator__line--active {
+  background: #1a2744;
+}
+
+.step-indicator__circle {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid #e5e0d8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.step-indicator__circle--active {
+  background: #1a2744;
+  border-color: #1a2744;
+  color: #ffffff;
+}
+
+.step-indicator__label {
+  font-size: 11px;
+  color: #6b7280;
+  margin-left: 6px;
+  white-space: nowrap;
+}
+
+/* Step content */
+.app-form__step-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 22px;
+  color: #1a2744;
+  margin: 0 0 8px 0;
+}
+
+.app-form__step-subtitle {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0 0 20px 0;
+}
+
+/* Aid type grid */
+.aid-type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.aid-type-card {
+  background: #ffffff;
+  border: 2px solid #e5e0d8;
+  border-radius: 10px;
+  padding: 16px 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.aid-type-card:hover {
+  border-color: #c8a84b;
+}
+
+.aid-type-card--selected {
+  background: #1a2744;
+  border-color: #c8a84b;
+  color: #ffffff;
+}
+
+.aid-type-card__emoji {
+  font-size: 24px;
+}
+
+.aid-type-card__label {
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* Document AI panel */
+.app-form__docai-panel {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.app-form__docai-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.app-form__docai-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a2744;
+  flex: 1;
+}
+
+.app-form__docai-badge {
+  background: rgba(139, 92, 246, 0.15);
+  color: #7c3aed;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.app-form__docai-desc {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0 0 12px 0;
+}
+
+.app-form__docai-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-form__docai-file {
+  background: #ffffff;
+  border: 1px solid #e5e0d8;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #1a2744;
+  flex: 1;
+}
+
+.app-form__docai-scan-btn {
+  background: #1e40af;
+  color: #ffffff;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.app-form__docai-scan-btn:hover {
+  background: #1d4ed8;
+}
+
+.app-form__docai-loading {
+  font-size: 14px;
+  color: #1e40af;
+  padding: 8px 0;
+}
+
+.app-form__docai-result {
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.app-form__docai-result-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.app-form__docai-result-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  color: #166534;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.app-form__docai-result-value {
+  display: block;
+  font-size: 13px;
+  color: #1a2744;
+  font-weight: 600;
+}
+
+/* Form fields */
+.app-form__fields-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.app-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.app-form__field--full {
+  margin-bottom: 20px;
+}
+
+.app-form__field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1a2744;
+}
+
+.app-form__field input {
+  border: 1px solid #e5e0d8;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #1a2744;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.app-form__field input:focus {
+  border-color: #c8a84b;
+}
+
+/* Document upload */
+.doc-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.doc-upload__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 2px dashed #e5e0d8;
+  border-radius: 8px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.doc-upload__row:hover {
+  border-color: #c8a84b;
+}
+
+.doc-upload__row--done {
+  background: #dcfce7;
+  border-color: #86efac;
+  border-style: solid;
+  cursor: default;
+}
+
+.doc-upload__icon {
+  font-size: 20px;
+}
+
+.doc-upload__info {
+  display: flex;
+  flex-direction: column;
+}
+
+.doc-upload__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a2744;
+}
+
+.doc-upload__status {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.doc-upload__row--done .doc-upload__status {
+  color: #166534;
+}
+
+/* Warning box */
+.app-form__warning-box {
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  padding: 14px;
+  font-size: 12px;
+  color: #92400e;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+/* Actions */
+.app-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.app-form__actions--between {
+  justify-content: space-between;
+}
+
+.app-form__btn {
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.app-form__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.app-form__btn--navy {
+  background: #1a2744;
+  color: #ffffff;
+  border-color: #1a2744;
+}
+
+.app-form__btn--navy:hover:not(:disabled) {
+  background: #243358;
+}
+
+.app-form__btn--gold {
+  background: #c8a84b;
+  color: #1a2744;
+  border-color: #c8a84b;
+}
+
+.app-form__btn--gold:hover:not(:disabled) {
+  background: #e8c96b;
+}
+
+.app-form__btn--outline {
+  background: transparent;
+  color: #1a2744;
+  border-color: #e5e0d8;
+}
+
+.app-form__btn--outline:hover {
+  border-color: #1a2744;
+}
+
+/* Success */
+.app-form__success-card {
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  border-radius: 12px;
+  padding: 32px;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.app-form__success-icon {
+  font-size: 40px;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.app-form__success-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 22px;
+  color: #166534;
+  margin: 0 0 12px 0;
+}
+
+.app-form__dosar-id {
+  font-family: "Courier New", monospace;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a2744;
+  display: block;
+}
+
+/* Log panel */
+.app-form__log-panel {
+  background: #1a2744;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.app-form__log-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 1px;
+  margin: 0 0 16px 0;
+}
+
+.app-form__log-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.app-form__log-time {
+  font-family: "Courier New", monospace;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  flex-shrink: 0;
+}
+
+.app-form__log-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.app-form__log-dot--blue {
+  background: #3b82f6;
+}
+
+.app-form__log-dot--green {
+  background: #4ade80;
+}
+
+.app-form__log-dot--purple {
+  background: #a78bfa;
+}
+
+.app-form__log-dot--orange {
+  background: #fb923c;
+}
+
+.app-form__log-msg {
+  font-family: "Courier New", monospace;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+@media (max-width: 600px) {
+  .app-form__fields-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .app-form__docai-result-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .aid-type-grid {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  }
+}

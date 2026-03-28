@@ -1,0 +1,71 @@
+.info-section {
+  background-color: #f8f5ef;
+  padding: 48px 20px;
+}
+
+.info-section__container {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.info-section__title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 26px;
+  color: #1a2744;
+  text-align: center;
+  margin: 0 0 36px 0;
+}
+
+.info-section__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 16px;
+}
+
+.info-section__card {
+  background: #ffffff;
+  border: 1px solid #e5e0d8;
+  border-radius: 10px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.info-section__step-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #c8a84b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-section__emoji {
+  font-size: 24px;
+}
+
+.info-section__card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a2744;
+  margin: 0;
+}
+
+.info-section__card-desc {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.5;
+  margin: 0;
+  flex: 1;
+}
+
+.info-section__service-badge {
+  display: inline-block;
+  background: #eff6ff;
+  color: #1e40af;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 600;
+  align-self: flex-start;
+}

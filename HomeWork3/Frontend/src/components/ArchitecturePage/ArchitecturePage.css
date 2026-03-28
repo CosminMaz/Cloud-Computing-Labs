@@ -1,0 +1,290 @@
+.arch {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 20px;
+}
+
+/* Flow diagram */
+.arch__flow-card {
+  background: #ffffff;
+  border: 1px solid #e5e0d8;
+  border-radius: 12px;
+  padding: 28px;
+  margin-bottom: 24px;
+}
+
+.arch__flow-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  color: #6b7280;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.arch__flow-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0;
+}
+
+.arch__flow-item {
+  display: flex;
+  align-items: center;
+}
+
+.arch__arrow {
+  display: flex;
+  align-items: center;
+  margin: 0 4px;
+}
+
+.arch__arrow-line {
+  width: 24px;
+  height: 2px;
+  background: #d1d5db;
+}
+
+.arch__arrow-head {
+  width: 0;
+  height: 0;
+  border-left: 6px solid #d1d5db;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+}
+
+.arch__flow-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 2px solid #e5e0d8;
+  background: #f8f5ef;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 90px;
+  font-family: inherit;
+}
+
+.arch__flow-node:hover {
+  border-color: #c8a84b;
+}
+
+.arch__flow-node--external {
+  border-style: dashed;
+  background: #f3f4f6;
+  cursor: default;
+}
+
+.arch__flow-node--stateful {
+  border-color: #c8a84b;
+}
+
+.arch__flow-node--selected {
+  background: #1a2744;
+  border-color: #1a2744;
+  color: #ffffff;
+}
+
+.arch__flow-node-emoji {
+  font-size: 22px;
+}
+
+.arch__flow-node-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.arch__stateful-tag {
+  font-size: 8px;
+  font-weight: 700;
+  color: #c8a84b;
+  letter-spacing: 0.5px;
+}
+
+/* Detail panel */
+.arch__detail-panel {
+  background: #1a2744;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  border-left: 4px solid;
+}
+
+.arch__detail-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.arch__detail-emoji {
+  font-size: 28px;
+}
+
+.arch__detail-name {
+  margin: 0;
+  color: #ffffff;
+  font-size: 18px;
+}
+
+.arch__detail-role {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.arch__stateful-badge {
+  margin-left: auto;
+  background: rgba(200, 168, 75, 0.2);
+  color: #c8a84b;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.arch__detail-desc {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Services grid */
+.arch__services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+  margin-bottom: 32px;
+}
+
+.arch__service-card {
+  background: #ffffff;
+  border: 1px solid #e5e0d8;
+  border-radius: 10px;
+  padding: 18px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+  font-family: inherit;
+}
+
+.arch__service-card:hover {
+  border-color: #c8a84b;
+}
+
+.arch__service-card--stateful {
+  border-color: #c8a84b;
+}
+
+.arch__service-card--selected {
+  background: #1a2744;
+  border-color: #1a2744;
+  color: #ffffff;
+}
+
+.arch__service-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.arch__service-name {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.arch__service-role {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.arch__service-card--selected .arch__service-role {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Pipeline */
+.arch__pipeline {
+  background: #f8f5ef;
+  border-radius: 12px;
+  padding: 32px;
+}
+
+.arch__pipeline-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 20px;
+  color: #1a2744;
+  text-align: center;
+  margin: 0 0 28px 0;
+}
+
+.arch__pipeline-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.arch__pipeline-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+}
+
+.arch__pipeline-num {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #1a2744;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.arch__pipeline-emoji {
+  font-size: 24px;
+}
+
+.arch__pipeline-step-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a2744;
+  margin: 0;
+}
+
+.arch__pipeline-step-desc {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.5;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .arch__flow-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .arch__arrow {
+    transform: rotate(90deg);
+  }
+
+  .arch__pipeline-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,18 @@
+export const COLORS = {
+  navy: "#1a2744",
+  navyLight: "#243358",
+  gold: "#c8a84b",
+  goldLight: "#e8c96b",
+  cream: "#f8f5ef",
+  surface: "#ffffff",
+  muted: "#6b7280",
+  border: "#e5e0d8",
+  success: "#166534",
+  successBg: "#dcfce7",
+  warning: "#92400e",
+  warningBg: "#fef3c7",
+  danger: "#991b1b",
+  dangerBg: "#fee2e2",
+  infoBg: "#eff6ff",
+  infoText: "#1e40af",
+};

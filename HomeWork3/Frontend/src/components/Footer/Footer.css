@@ -1,0 +1,30 @@
+.footer {
+  background: #111827;
+  padding: 24px 20px;
+  text-align: center;
+}
+
+.footer__container {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.footer__line1 {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0 0 6px 0;
+}
+
+.footer__line1 strong {
+  color: #ffffff;
+}
+
+.footer__line2 {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
+}
+
+.footer__gold {
+  color: #c8a84b;
+}

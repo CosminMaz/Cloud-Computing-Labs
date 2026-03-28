@@ -1,0 +1,78 @@
+.cloud-badge {
+  background: #1a2744;
+  padding: 16px 20px;
+}
+
+.cloud-badge__container {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.cloud-badge__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.cloud-badge__label {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.cloud-badge__link {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.8);
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.cloud-badge__link:hover {
+  border-color: #c8a84b;
+  color: #c8a84b;
+}
+
+.cloud-badge__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cloud-badge__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 5px 12px;
+  border-radius: 16px;
+  font-size: 11px;
+  color: #ffffff;
+}
+
+.cloud-badge__pill--stateful {
+  border-color: #c8a84b;
+}
+
+.cloud-badge__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cloud-badge__stateful-label {
+  font-size: 8px;
+  font-weight: 700;
+  color: #c8a84b;
+  letter-spacing: 0.5px;
+  margin-left: 4px;
+}

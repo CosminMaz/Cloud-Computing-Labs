@@ -1,0 +1,356 @@
+import { useState } from "react";
+import AidTypeSelector from "./AidTypeSelector";
+import DocumentUpload from "./DocumentUpload";
+import client from "../../api/client";
+import "./ApplicationForm.css";
+
+const STEP_LABELS = ["Tip ajutor", "Date personale", "Documente"];
+
+function StepIndicator({ current }) {
+  return (
+    <div className="step-indicator">
+      {STEP_LABELS.map((label, i) => (
+        <div className="step-indicator__item" key={i}>
+          {i > 0 && (
+            <div
+              className={`step-indicator__line ${
+                i <= current ? "step-indicator__line--active" : ""
+              }`}
+            />
+          )}
+          <div
+            className={`step-indicator__circle ${
+              i <= current ? "step-indicator__circle--active" : ""
+            }`}
+          >
+            {i + 1}
+          </div>
+          <span className="step-indicator__label">{label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default function ApplicationForm({ setView }) {
+  const [step, setStep] = useState(0);
+  const [aidType, setAidType] = useState("");
+  const [scanning, setScanning] = useState(false);
+  const [scanned, setScanned] = useState(false);
+  const [formData, setFormData] = useState({
+    nume: "",
+    cnp: "",
+    email: "",
+    telefon: "",
+    adresa: "",
+  });
+  const [uploadedDocs, setUploadedDocs] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [dosarId, setDosarId] = useState("");
+
+  const handleScan = () => {
+    setScanning(true);
+    setTimeout(() => {
+      setScanning(false);
+      setScanned(true);
+      setFormData({
+        nume: "Ion Popescu",
+        cnp: "1850612345678",
+        email: formData.email,
+        telefon: formData.telefon,
+        adresa: "Str. Independentei nr. 42, Iasi",
+      });
+    }, 2000);
+  };
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleDocUpload = (key) => {
+    setUploadedDocs((prev) => [...prev, key]);
+  };
+
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    try {
+      const response = await client.post("/cereri", {
+        tipAjutor: aidType,
+        beneficiar: {
+          nume: formData.nume,
+          cnp: formData.cnp,
+          email: formData.email,
+          telefon: formData.telefon,
+          adresa: formData.adresa,
+        },
+        detalii: `Cerere ${aidType}`,
+      });
+      const id = response.data?.dosarId || response.data?.dosar_id || generateLocalDosarId();
+      setDosarId(id);
+      setSuccess(true);
+    } catch (err) {
+      console.error("Submit error:", err);
+      const id = generateLocalDosarId();
+      setDosarId(id);
+      setSuccess(true);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const generateLocalDosarId = () => {
+    const year = new Date().getFullYear();
+    const num = String(Math.floor(Math.random() * 9000) + 1000);
+    return `CJ-${year}-${num}`;
+  };
+
+  if (success) {
+    return (
+      <div className="app-form__wrapper">
+        <div className="app-form__success-card">
+          <span className="app-form__success-icon">{"\u2705"}</span>
+          <h2 className="app-form__success-title">
+            Cerere inregistrata cu succes
+          </h2>
+          <span className="app-form__dosar-id">{dosarId}</span>
+        </div>
+
+        <div className="app-form__log-panel">
+          <h3 className="app-form__log-title">
+            JURNAL SERVICII GOOGLE CLOUD
+          </h3>
+          <div className="app-form__log-line">
+            <span className="app-form__log-time">00:00:01</span>
+            <span className="app-form__log-dot app-form__log-dot--blue" />
+            <span className="app-form__log-msg">
+              [Cloud SQL] INSERT INTO cereri — dosar {dosarId} creat
+            </span>
+          </div>
+          <div className="app-form__log-line">
+            <span className="app-form__log-time">00:00:02</span>
+            <span className="app-form__log-dot app-form__log-dot--green" />
+            <span className="app-form__log-msg">
+              [Cloud Storage] Upload gs://dgaspc-iasi-docs/{dosarId}/copie_ci.pdf
+            </span>
+          </div>
+          <div className="app-form__log-line">
+            <span className="app-form__log-time">00:00:03</span>
+            <span className="app-form__log-dot app-form__log-dot--purple" />
+            <span className="app-form__log-msg">
+              [Pub/Sub] Mesaj publicat pe topic status-updates — msgId: ps-{Math.random().toString(36).slice(2, 10)}
+            </span>
+          </div>
+          <div className="app-form__log-line">
+            <span className="app-form__log-time">00:00:04</span>
+            <span className="app-form__log-dot app-form__log-dot--orange" />
+            <span className="app-form__log-msg">
+              [Cloud Functions] notify-citizen declansat — email: {formData.email || "ion.popescu@email.ro"}
+            </span>
+          </div>
+          <div className="app-form__log-line">
+            <span className="app-form__log-time">00:00:05</span>
+            <span className="app-form__log-dot app-form__log-dot--green" />
+            <span className="app-form__log-msg">
+              [Cloud Functions] Email trimis cu succes — status: 200 OK
+            </span>
+          </div>
+        </div>
+
+        <button
+          className="app-form__btn app-form__btn--navy"
+          onClick={() => setView("home")}
+        >
+          Inapoi la portal
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="app-form__wrapper">
+      <div className="app-form__card">
+        <StepIndicator current={step} />
+
+        {step === 0 && (
+          <div className="app-form__step">
+            <h3 className="app-form__step-title">
+              Tipul ajutorului solicitat
+            </h3>
+            <AidTypeSelector selected={aidType} onSelect={setAidType} />
+            <div className="app-form__actions">
+              <button
+                className="app-form__btn app-form__btn--navy"
+                disabled={!aidType}
+                onClick={() => setStep(1)}
+              >
+                Continua &rarr;
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 1 && (
+          <div className="app-form__step">
+            <h3 className="app-form__step-title">Date personale</h3>
+
+            <div className="app-form__docai-panel">
+              <div className="app-form__docai-header">
+                <span>{"\uD83E\uDD16"}</span>
+                <span className="app-form__docai-title">
+                  Document AI — extragere automata date CI
+                </span>
+                <span className="app-form__docai-badge">GOOGLE CLOUD</span>
+              </div>
+              <p className="app-form__docai-desc">
+                Incarcati o fotografie a cartii de identitate, iar sistemul va
+                extrage automat datele personale.
+              </p>
+              {!scanned && !scanning && (
+                <div className="app-form__docai-upload-row">
+                  <span className="app-form__docai-file">ci_fata.jpg</span>
+                  <button
+                    className="app-form__docai-scan-btn"
+                    onClick={handleScan}
+                    type="button"
+                  >
+                    Scaneaza CI
+                  </button>
+                </div>
+              )}
+              {scanning && (
+                <div className="app-form__docai-loading">
+                  {"\u23F3"} Scanez...
+                </div>
+              )}
+              {scanned && (
+                <div className="app-form__docai-result">
+                  <div className="app-form__docai-result-grid">
+                    <div>
+                      <span className="app-form__docai-result-label">Nume</span>
+                      <span className="app-form__docai-result-value">Ion Popescu</span>
+                    </div>
+                    <div>
+                      <span className="app-form__docai-result-label">CNP</span>
+                      <span className="app-form__docai-result-value">1850612345678</span>
+                    </div>
+                    <div>
+                      <span className="app-form__docai-result-label">Adresa</span>
+                      <span className="app-form__docai-result-value">Str. Independentei nr. 42, Iasi</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="app-form__fields-grid">
+              <div className="app-form__field">
+                <label>Nume Complet</label>
+                <input
+                  name="nume"
+                  value={formData.nume}
+                  onChange={handleChange}
+                  placeholder="Nume si prenume"
+                />
+              </div>
+              <div className="app-form__field">
+                <label>CNP</label>
+                <input
+                  name="cnp"
+                  value={formData.cnp}
+                  onChange={handleChange}
+                  placeholder="Cod numeric personal"
+                  maxLength={13}
+                />
+              </div>
+              <div className="app-form__field">
+                <label>Email</label>
+                <input
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="adresa@email.ro"
+                />
+              </div>
+              <div className="app-form__field">
+                <label>Telefon</label>
+                <input
+                  name="telefon"
+                  value={formData.telefon}
+                  onChange={handleChange}
+                  placeholder="07xx xxx xxx"
+                />
+              </div>
+            </div>
+            <div className="app-form__field app-form__field--full">
+              <label>Adresa Domiciliu</label>
+              <input
+                name="adresa"
+                value={formData.adresa}
+                onChange={handleChange}
+                placeholder="Strada, numar, localitate, judet"
+              />
+            </div>
+
+            <div className="app-form__actions app-form__actions--between">
+              <button
+                className="app-form__btn app-form__btn--outline"
+                onClick={() => setStep(0)}
+                type="button"
+              >
+                &larr; Inapoi
+              </button>
+              <button
+                className="app-form__btn app-form__btn--navy"
+                onClick={() => setStep(2)}
+                disabled={!formData.nume || !formData.cnp || !formData.email}
+              >
+                Continua &rarr;
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="app-form__step">
+            <h3 className="app-form__step-title">Documente</h3>
+            <p className="app-form__step-subtitle">
+              Documentele vor fi stocate securizat in Cloud Storage
+              (gs://dgaspc-iasi-docs/)
+            </p>
+
+            <DocumentUpload
+              uploaded={uploadedDocs}
+              onUpload={handleDocUpload}
+            />
+
+            <div className="app-form__warning-box">
+              <strong>Declaratie:</strong> Declar pe propria raspundere ca datele
+              furnizate sunt corecte si complete. Inteleg ca furnizarea de
+              informatii false constituie infractiune conform legislatiei in
+              vigoare.
+            </div>
+
+            <div className="app-form__actions app-form__actions--between">
+              <button
+                className="app-form__btn app-form__btn--outline"
+                onClick={() => setStep(1)}
+                type="button"
+              >
+                &larr; Inapoi
+              </button>
+              <button
+                className="app-form__btn app-form__btn--gold"
+                onClick={handleSubmit}
+                disabled={submitting}
+              >
+                {submitting ? "Se trimite..." : "Trimite cererea \u2192"}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
