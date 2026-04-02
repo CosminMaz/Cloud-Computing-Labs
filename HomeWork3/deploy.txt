@@ -1,0 +1,30 @@
+DEPLOY TO VM
+============
+
+1. Build JAR locally
+--------------------
+cd ~/Code/Cloud-Computing-Labs/HomeWork3/Backend/Cloud
+./mvnw package -DskipTests
+cd ~/Code/Cloud-Computing-Labs/HomeWork3
+
+2. Sync to VM
+-------------
+rsync -avz --exclude='node_modules' --exclude='.git' --exclude='target' \
+      -e "ssh -i ~/.ssh/google_compute_engine" \
+      ~/Code/Cloud-Computing-Labs/HomeWork3/ \
+      cossi@34.65.51.24:~/HomeWork3/
+
+3. SSH into VM
+--------------
+ssh -i ~/.ssh/google_compute_engine cossi@34.65.51.24
+
+4. Build JAR on VM and restart Docker
+--------------------------------------
+cd ~/HomeWork3/Backend/Cloud && ./mvnw package -DskipTests && cd ../..
+docker compose down
+docker compose up --build -d
+
+5. Check logs
+-------------
+docker compose logs -f backend
+docker compose logs -f frontend

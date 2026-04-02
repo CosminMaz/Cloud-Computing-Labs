@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import AidTypeSelector from "./AidTypeSelector";
 import DocumentUpload from "./DocumentUpload";
 import client from "../../api/client";
@@ -35,8 +35,14 @@ function StepIndicator({ current }) {
 export default function ApplicationForm({ setView }) {
   const [step, setStep] = useState(0);
   const [aidType, setAidType] = useState("");
+  const [idFile, setIdFile] = useState(null);
+  const [idPreview, setIdPreview] = useState(null);
   const [scanning, setScanning] = useState(false);
   const [scanned, setScanned] = useState(false);
+  const [scanError, setScanError] = useState("");
+  const [rawOcr, setRawOcr] = useState("");
+  const [showRaw, setShowRaw] = useState(false);
+  const idFileInputRef = useRef(null);
   const [formData, setFormData] = useState({
     nume: "",
     cnp: "",
@@ -51,19 +57,42 @@ export default function ApplicationForm({ setView }) {
   const [dosarId, setDosarId] = useState("");
   const [error, setError] = useState("");
 
-  const handleScan = () => {
+  const handleIdFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setIdFile(file);
+    setScanned(false);
+    setScanError("");
+    setIdPreview(URL.createObjectURL(file));
+  };
+
+  const handleScan = async () => {
+    if (!idFile) return;
     setScanning(true);
-    setTimeout(() => {
-      setScanning(false);
-      setScanned(true);
-      setFormData({
-        nume: "Ion Popescu",
-        cnp: "1850612345678",
-        email: formData.email,
-        telefon: formData.telefon,
-        adresa: "Str. Independentei nr. 42, Iasi",
+    setScanError("");
+    const form = new FormData();
+    form.append("image", idFile);
+    try {
+      const { data } = await client.post("/scan-document", form, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
-    }, 2000);
+      setRawOcr(data.rawText || "");
+      setScanned(true);
+      setFormData((prev) => ({
+        ...prev,
+        nume: [data.prenume, data.nume].filter(Boolean).join(" ") || prev.nume,
+        cnp: data.cnp || prev.cnp,
+        adresa: data.adresa || prev.adresa,
+      }));
+      if (!data.cnp && !data.nume && !data.prenume) {
+        setScanError("Nu s-au putut extrage date. Verificati ca fotografia CI sa fie clara si bine iluminata.");
+      }
+    } catch (err) {
+      console.error("Scan error:", err);
+      setScanError("Scanarea a esuat. Verificati imaginea si reincercati.");
+    } finally {
+      setScanning(false);
+    }
   };
 
   const handleChange = (e) => {
@@ -92,6 +121,7 @@ export default function ApplicationForm({ setView }) {
       setDosarId(id);
 
       // Upload documents to Cloud Storage via backend
+      const uploadErrors = [];
       for (const [tipDocument, file] of Object.entries(docFiles)) {
         const form = new FormData();
         form.append("file", file);
@@ -101,8 +131,15 @@ export default function ApplicationForm({ setView }) {
             headers: { "Content-Type": "multipart/form-data" },
           });
         } catch (uploadErr) {
-          console.error(`Failed to upload ${tipDocument}:`, uploadErr);
+          const msg = uploadErr.response?.data?.error || uploadErr.message;
+          console.error(`Failed to upload ${tipDocument}:`, msg);
+          uploadErrors.push(`${tipDocument}: ${msg}`);
         }
+      }
+      if (uploadErrors.length > 0) {
+        setError(`Cererea a fost inregistrata (${id}), dar unele documente nu au putut fi incarcate:\n${uploadErrors.join("\n")}`);
+        setSubmitting(false);
+        return;
       }
 
       setSuccess(true);
@@ -215,21 +252,45 @@ export default function ApplicationForm({ setView }) {
                 Incarcati o fotografie a cartii de identitate, iar sistemul va
                 extrage automat datele personale.
               </p>
+              <input
+                ref={idFileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,application/pdf"
+                style={{ display: "none" }}
+                onChange={handleIdFileChange}
+              />
               {!scanned && !scanning && (
                 <div className="app-form__docai-upload-row">
-                  <span className="app-form__docai-file">ci_fata.jpg</span>
+                  <button
+                    className="app-form__docai-file-btn"
+                    onClick={() => idFileInputRef.current.click()}
+                    type="button"
+                  >
+                    {"\uD83D\uDCC4"} {idFile ? idFile.name : "Selectati fotografia CI"}
+                  </button>
+                  {idPreview && (
+                    <img
+                      src={idPreview}
+                      alt="Previzualizare CI"
+                      className="app-form__docai-preview"
+                    />
+                  )}
                   <button
                     className="app-form__docai-scan-btn"
                     onClick={handleScan}
+                    disabled={!idFile}
                     type="button"
                   >
                     Scaneaza CI
                   </button>
                 </div>
               )}
+              {scanError && (
+                <div className="app-form__docai-error">{scanError}</div>
+              )}
               {scanning && (
                 <div className="app-form__docai-loading">
-                  {"\u23F3"} Scanez...
+                  {"\u23F3"} Scanez cu Google Vision API...
                 </div>
               )}
               {scanned && (
@@ -237,17 +298,31 @@ export default function ApplicationForm({ setView }) {
                   <div className="app-form__docai-result-grid">
                     <div>
                       <span className="app-form__docai-result-label">Nume</span>
-                      <span className="app-form__docai-result-value">{formData.nume}</span>
+                      <span className="app-form__docai-result-value">{formData.nume || "—"}</span>
                     </div>
                     <div>
                       <span className="app-form__docai-result-label">CNP</span>
-                      <span className="app-form__docai-result-value">{formData.cnp}</span>
+                      <span className="app-form__docai-result-value">{formData.cnp || "—"}</span>
                     </div>
                     <div>
                       <span className="app-form__docai-result-label">Adresa</span>
-                      <span className="app-form__docai-result-value">{formData.adresa}</span>
+                      <span className="app-form__docai-result-value">{formData.adresa || "—"}</span>
                     </div>
                   </div>
+                  {rawOcr && (
+                    <div className="app-form__docai-raw">
+                      <button
+                        type="button"
+                        className="app-form__docai-raw-toggle"
+                        onClick={() => setShowRaw((v) => !v)}
+                      >
+                        {showRaw ? "▲" : "▼"} Text brut OCR
+                      </button>
+                      {showRaw && (
+                        <pre className="app-form__docai-raw-text">{rawOcr}</pre>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

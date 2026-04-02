@@ -1,0 +1,30 @@
+services:
+
+  # Spring Boot REST API — connects to Cloud SQL via socket factory (uses VM's service account ADC)
+  backend:
+    build:
+      context: ./Backend/Cloud
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      GCP_PROJECT_ID:      ${GCP_PROJECT_ID}
+      CLOUD_SQL_INSTANCE:  ${CLOUD_SQL_INSTANCE}
+      DB_USERNAME:         ${DB_USERNAME}
+      DB_PASSWORD:         ${DB_PASSWORD}
+      DB_NAME:             ${DB_NAME}
+      GCS_BUCKET_NAME:     ${GCS_BUCKET_NAME}
+      PUBSUB_TOPIC_ID:     ${PUBSUB_TOPIC_ID}
+      APP_ENGINE_DOMAIN:   ${APP_ENGINE_DOMAIN}
+
+  # React frontend — built with VITE_API_URL=/api; Nginx proxies /api/* to the backend
+  frontend:
+    build:
+      context: ./Frontend
+      args:
+        VITE_API_URL: /api
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
