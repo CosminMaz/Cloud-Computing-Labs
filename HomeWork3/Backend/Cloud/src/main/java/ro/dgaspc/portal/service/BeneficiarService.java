@@ -13,6 +13,13 @@ public class BeneficiarService {
 
     public Beneficiar createOrFind(Beneficiar beneficiar) {
         return beneficiarRepository.findByCnp(beneficiar.getCnp())
+                .map(existing -> {
+                    existing.setNume(beneficiar.getNume());
+                    existing.setEmail(beneficiar.getEmail());
+                    existing.setTelefon(beneficiar.getTelefon());
+                    existing.setAdresa(beneficiar.getAdresa());
+                    return beneficiarRepository.save(existing);
+                })
                 .orElseGet(() -> beneficiarRepository.save(beneficiar));
     }
 }

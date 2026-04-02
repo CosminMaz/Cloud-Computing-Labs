@@ -11,83 +11,49 @@ const FILTERS = [
   { key: "rejected", label: "Respins" },
 ];
 
-const FALLBACK_CERERI = [
-  {
-    dosarId: "CJ-2024-0347",
-    tipAjutor: "Indemnizatie handicap",
-    beneficiarNume: "Ion Popescu",
-    createdAt: "2024-03-15",
-    status: "approved",
-  },
-  {
-    dosarId: "CJ-2024-0348",
-    tipAjutor: "Venit minim garantat",
-    beneficiarNume: "Maria Ionescu",
-    createdAt: "2024-03-16",
-    status: "pending",
-  },
-  {
-    dosarId: "CJ-2024-0349",
-    tipAjutor: "Ajutor incalzire",
-    beneficiarNume: "Vasile Georgescu",
-    createdAt: "2024-03-17",
-    status: "review",
-  },
-  {
-    dosarId: "CJ-2024-0350",
-    tipAjutor: "Alocatie copii",
-    beneficiarNume: "Elena Dumitrescu",
-    createdAt: "2024-03-18",
-    status: "rejected",
-  },
-  {
-    dosarId: "CJ-2024-0351",
-    tipAjutor: "Ingrijire varstnici",
-    beneficiarNume: "Gheorghe Munteanu",
-    createdAt: "2024-03-19",
-    status: "pending",
-  },
-];
-
-const FALLBACK_STATS = {
-  total: 1247,
-  pending: 318,
-  approved: 891,
-  avgDays: "4.2",
+const EMPTY_STATS = {
+  total: 0,
+  pending: 0,
+  review: 0,
+  approved: 0,
+  rejected: 0,
 };
 
 export default function Dashboard() {
   const [filter, setFilter] = useState("all");
   const [cereri, setCereri] = useState([]);
-  const [stats, setStats] = useState(FALLBACK_STATS);
+  const [stats, setStats] = useState(EMPTY_STATS);
   const [notified, setNotified] = useState({});
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchData();
   }, []);
 
   const fetchData = async () => {
+    setLoading(true);
     try {
       const [cereriRes, statsRes] = await Promise.all([
         client.get("/cereri"),
         client.get("/stats"),
       ]);
-      setCereri(cereriRes.data || FALLBACK_CERERI);
-      setStats(statsRes.data || FALLBACK_STATS);
+      setCereri(cereriRes.data || []);
+      setStats(statsRes.data || EMPTY_STATS);
     } catch (err) {
-      console.warn("Using fallback data:", err.message);
-      setCereri(FALLBACK_CERERI);
-      setStats(FALLBACK_STATS);
+      console.error("Failed to fetch data:", err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleNotify = async (dosarId) => {
     try {
       await client.patch(`/cereri/${dosarId}/status`, { status: "review" });
+      setNotified((prev) => ({ ...prev, [dosarId]: true }));
+      fetchData();
     } catch (err) {
-      console.warn("Notification simulated locally:", err.message);
+      console.error("Failed to update status:", err.message);
     }
-    setNotified((prev) => ({ ...prev, [dosarId]: true }));
   };
 
   const filtered =
@@ -110,8 +76,8 @@ export default function Dashboard() {
       <div className="dashboard__stats-grid">
         <div className="dashboard__stat-card">
           <span className="dashboard__stat-label">CERERI TOTALE</span>
-          <span className="dashboard__stat-value">{stats.total?.toLocaleString?.() || stats.total}</span>
-          <span className="dashboard__stat-sub">+43 luna aceasta</span>
+          <span className="dashboard__stat-value">{stats.total}</span>
+          <span className="dashboard__stat-sub">inregistrate in sistem</span>
         </div>
         <div className="dashboard__stat-card">
           <span className="dashboard__stat-label">IN ASTEPTARE</span>
@@ -119,14 +85,14 @@ export default function Dashboard() {
           <span className="dashboard__stat-sub">necesita procesare</span>
         </div>
         <div className="dashboard__stat-card">
-          <span className="dashboard__stat-label">APROBATE</span>
-          <span className="dashboard__stat-value">{stats.approved}</span>
-          <span className="dashboard__stat-sub">rata: 71.5%</span>
+          <span className="dashboard__stat-label">IN ANALIZA</span>
+          <span className="dashboard__stat-value">{stats.review}</span>
+          <span className="dashboard__stat-sub">in curs de verificare</span>
         </div>
         <div className="dashboard__stat-card">
-          <span className="dashboard__stat-label">TIMP MEDIU</span>
-          <span className="dashboard__stat-value">{stats.avgDays} zile</span>
-          <span className="dashboard__stat-sub">fata de 18 zile anterior</span>
+          <span className="dashboard__stat-label">APROBATE</span>
+          <span className="dashboard__stat-value">{stats.approved}</span>
+          <span className="dashboard__stat-sub">{stats.total > 0 ? Math.round((stats.approved / stats.total) * 100) : 0}% rata aprobare</span>
         </div>
       </div>
 
@@ -162,22 +128,22 @@ export default function Dashboard() {
           <tbody>
             {filtered.map((c, i) => (
               <tr key={c.dosarId || i} className={i % 2 === 1 ? "dashboard__row--alt" : ""}>
-                <td className="dashboard__dosar-id">{c.dosarId || c.dosar_id}</td>
-                <td>{c.tipAjutor || c.tip_ajutor}</td>
-                <td>{c.beneficiarNume || c.beneficiar_nume || "—"}</td>
-                <td>{c.createdAt || c.created_at || "—"}</td>
+                <td className="dashboard__dosar-id">{c.dosarId}</td>
+                <td>{c.tipAjutor}</td>
+                <td>{c.beneficiar?.nume || "—"}</td>
+                <td>{c.createdAt ? new Date(c.createdAt).toLocaleDateString("ro-RO") : "—"}</td>
                 <td>
                   <Badge status={c.status} />
                 </td>
                 <td>
-                  {notified[c.dosarId || c.dosar_id] ? (
+                  {notified[c.dosarId] ? (
                     <span className="dashboard__notified">
                       {"\u26A1"} Trimis via Functions
                     </span>
                   ) : (
                     <button
                       className="dashboard__notify-btn"
-                      onClick={() => handleNotify(c.dosarId || c.dosar_id)}
+                      onClick={() => handleNotify(c.dosarId)}
                     >
                       {"\uD83D\uDCE8"} Notifica
                     </button>

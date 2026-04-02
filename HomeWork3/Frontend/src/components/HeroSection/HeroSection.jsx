@@ -1,13 +1,23 @@
+import { useState, useEffect } from "react";
+import client from "../../api/client";
 import "./HeroSection.css";
 
-const STATS = [
-  { value: "1,247", label: "Cereri totale", sub: "+43 luna aceasta" },
-  { value: "318", label: "In asteptare", sub: "necesita procesare" },
-  { value: "891", label: "Aprobate", sub: "rata: 71.5%" },
-  { value: "4.2 zile", label: "Timp mediu", sub: "fata de 18 zile anterior" },
-];
-
 export default function HeroSection({ setView }) {
+  const [stats, setStats] = useState({ total: 0, pending: 0, approved: 0, review: 0 });
+
+  useEffect(() => {
+    client.get("/stats")
+      .then((res) => setStats(res.data))
+      .catch(() => {});
+  }, []);
+
+  const statCards = [
+    { value: stats.total, label: "Cereri totale", sub: "inregistrate in sistem" },
+    { value: stats.pending, label: "In asteptare", sub: "necesita procesare" },
+    { value: stats.approved, label: "Aprobate", sub: stats.total > 0 ? `rata: ${Math.round((stats.approved / stats.total) * 100)}%` : "rata: 0%" },
+    { value: stats.review, label: "In analiza", sub: "in curs de verificare" },
+  ];
+
   return (
     <section className="hero">
       <div className="hero__container">
@@ -42,7 +52,7 @@ export default function HeroSection({ setView }) {
           </div>
         </div>
         <div className="hero__right">
-          {STATS.map((s, i) => (
+          {statCards.map((s, i) => (
             <div className="hero__stat-card" key={i}>
               <span className="hero__stat-value">{s.value}</span>
               <span className="hero__stat-label">{s.label}</span>

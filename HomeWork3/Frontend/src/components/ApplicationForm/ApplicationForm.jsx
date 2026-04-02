@@ -45,9 +45,11 @@ export default function ApplicationForm({ setView }) {
     adresa: "",
   });
   const [uploadedDocs, setUploadedDocs] = useState([]);
+  const [docFiles, setDocFiles] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [dosarId, setDosarId] = useState("");
+  const [error, setError] = useState("");
 
   const handleScan = () => {
     setScanning(true);
@@ -68,41 +70,48 @@ export default function ApplicationForm({ setView }) {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleDocUpload = (key) => {
+  const handleDocUpload = (key, file) => {
     setUploadedDocs((prev) => [...prev, key]);
+    setDocFiles((prev) => ({ ...prev, [key]: file }));
   };
 
   const handleSubmit = async () => {
     setSubmitting(true);
+    setError("");
     try {
       const response = await client.post("/cereri", {
+        nume: formData.nume,
+        cnp: formData.cnp,
+        email: formData.email,
+        telefon: formData.telefon,
+        adresa: formData.adresa,
         tipAjutor: aidType,
-        beneficiar: {
-          nume: formData.nume,
-          cnp: formData.cnp,
-          email: formData.email,
-          telefon: formData.telefon,
-          adresa: formData.adresa,
-        },
         detalii: `Cerere ${aidType}`,
       });
-      const id = response.data?.dosarId || response.data?.dosar_id || generateLocalDosarId();
+      const id = response.data?.dosarId || response.data?.dosar_id;
       setDosarId(id);
+
+      // Upload documents to Cloud Storage via backend
+      for (const [tipDocument, file] of Object.entries(docFiles)) {
+        const form = new FormData();
+        form.append("file", file);
+        form.append("tipDocument", tipDocument);
+        try {
+          await client.post(`/cereri/${id}/documente`, form, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+        } catch (uploadErr) {
+          console.error(`Failed to upload ${tipDocument}:`, uploadErr);
+        }
+      }
+
       setSuccess(true);
     } catch (err) {
       console.error("Submit error:", err);
-      const id = generateLocalDosarId();
-      setDosarId(id);
-      setSuccess(true);
+      setError("Eroare la trimiterea cererii. Verificati conexiunea si reincercati.");
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const generateLocalDosarId = () => {
-    const year = new Date().getFullYear();
-    const num = String(Math.floor(Math.random() * 9000) + 1000);
-    return `CJ-${year}-${num}`;
   };
 
   if (success) {
@@ -228,15 +237,15 @@ export default function ApplicationForm({ setView }) {
                   <div className="app-form__docai-result-grid">
                     <div>
                       <span className="app-form__docai-result-label">Nume</span>
-                      <span className="app-form__docai-result-value">Ion Popescu</span>
+                      <span className="app-form__docai-result-value">{formData.nume}</span>
                     </div>
                     <div>
                       <span className="app-form__docai-result-label">CNP</span>
-                      <span className="app-form__docai-result-value">1850612345678</span>
+                      <span className="app-form__docai-result-value">{formData.cnp}</span>
                     </div>
                     <div>
                       <span className="app-form__docai-result-label">Adresa</span>
-                      <span className="app-form__docai-result-value">Str. Independentei nr. 42, Iasi</span>
+                      <span className="app-form__docai-result-value">{formData.adresa}</span>
                     </div>
                   </div>
                 </div>
@@ -331,6 +340,12 @@ export default function ApplicationForm({ setView }) {
               informatii false constituie infractiune conform legislatiei in
               vigoare.
             </div>
+
+            {error && (
+              <div className="app-form__error-box" style={{ color: "#b91c1c", background: "#fef2f2", border: "1px solid #fecaca", padding: "12px", borderRadius: "6px", marginBottom: "16px" }}>
+                {error}
+              </div>
+            )}
 
             <div className="app-form__actions app-form__actions--between">
               <button
