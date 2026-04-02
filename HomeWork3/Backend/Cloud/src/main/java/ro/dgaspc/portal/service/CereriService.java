@@ -12,7 +12,10 @@ import ro.dgaspc.portal.repository.CerereRepository;
 import ro.dgaspc.portal.repository.NotificareLogRepository;
 
 import java.time.Year;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 @Service
 @RequiredArgsConstructor
@@ -46,16 +49,14 @@ public class CereriService {
      * Returns all cereri ordered by creation date descending.
      */
     public List<Cerere> getAllCereri() {
-        List<Cerere> cereri = cerereRepository.findAll();
-        cereri.sort(Comparator.comparing(Cerere::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())));
-        return cereri;
+        return cerereRepository.findAllWithBeneficiar();
     }
 
     /**
      * Returns cereri filtered by status.
      */
     public List<Cerere> getCereriByStatus(String status) {
-        return cerereRepository.findByStatus(status);
+        return cerereRepository.findByStatusWithBeneficiar(status);
     }
 
     /**

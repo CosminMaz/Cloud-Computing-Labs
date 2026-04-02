@@ -130,7 +130,7 @@ export default function Dashboard() {
               <tr key={c.dosarId || i} className={i % 2 === 1 ? "dashboard__row--alt" : ""}>
                 <td className="dashboard__dosar-id">{c.dosarId}</td>
                 <td>{c.tipAjutor}</td>
-                <td>{c.beneficiar?.nume || "—"}</td>
+                <td>{c.beneficiarNume || "—"}</td>
                 <td>{c.createdAt ? new Date(c.createdAt).toLocaleDateString("ro-RO") : "—"}</td>
                 <td>
                   <Badge status={c.status} />

@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ro.dgaspc.portal.dto.CerereResponseDto;
 import ro.dgaspc.portal.model.Beneficiar;
 import ro.dgaspc.portal.model.Cerere;
 import ro.dgaspc.portal.service.CereriService;
@@ -41,15 +42,17 @@ public class CereriController {
     }
 
     /**
-     * GET /api/cereri - List all applications, optionally filtered by status.
+     * GET /api/cereri - List all applications as DTOs with flat beneficiar fields.
      */
     @GetMapping
-    public ResponseEntity<List<Cerere>> getAllCereri(
+    public ResponseEntity<List<CerereResponseDto>> getAllCereri(
             @RequestParam(required = false) String status) {
-        if (status != null && !status.isEmpty()) {
-            return ResponseEntity.ok(cereriService.getCereriByStatus(status));
-        }
-        return ResponseEntity.ok(cereriService.getAllCereri());
+        List<Cerere> cereri = (status != null && !status.isEmpty())
+                ? cereriService.getCereriByStatus(status)
+                : cereriService.getAllCereri();
+        return ResponseEntity.ok(
+                cereri.stream().map(CerereResponseDto::from).toList()
+        );
     }
 
     /**
