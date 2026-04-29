@@ -11,5 +11,7 @@ class Settings:
     DATABASE_URL = os.getenv("DATABASE_URL", "")
     AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING", "")
     AZURE_STORAGE_CONTAINER = os.getenv("AZURE_STORAGE_CONTAINER", "profile-pictures")
+    AZURE_SERVICE_BUS_CONNECTION_STRING = os.getenv("AZURE_SERVICE_BUS_CONNECTION_STRING", "")
+    AZURE_SERVICE_BUS_QUEUE = os.getenv("AZURE_SERVICE_BUS_QUEUE", "booking-events")
 
 settings = Settings()

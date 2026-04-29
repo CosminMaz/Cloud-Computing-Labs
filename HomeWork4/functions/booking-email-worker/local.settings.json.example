@@ -1,0 +1,14 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "AzureWebJobsFeatureFlags": "EnableWorkerIndexing",
+
+    "SERVICE_BUS_CONNECTION": "<paste Service Bus namespace connection string>",
+    "SERVICE_BUS_QUEUE_NAME": "booking-events",
+
+    "EMAIL_CONNECTION_STRING": "<paste Azure Communication Services connection string>",
+    "EMAIL_SENDER_ADDRESS": "DoNotReply@<your-azure-managed-domain>.azurecomm.net"
+  }
+}

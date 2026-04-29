@@ -6,4 +6,5 @@ python-jose
 httpx
 pyodbc
 azure-storage-blob
+azure-servicebus
 python-multipart

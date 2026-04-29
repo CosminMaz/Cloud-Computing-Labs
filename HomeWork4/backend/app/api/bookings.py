@@ -1,16 +1,26 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from app.core.database import get_session
 from app.core.auth import verify_token
-from app.models.domain import User, Booking, UserRole
+from app.models.domain import User, Booking, UserRole, BookingStatus
 from app.schemas.booking import BookingCreate, BookingRead
+from app.services.service_bus import ServiceBusPublisher, get_service_bus_publisher
 from typing import List
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
 
 @router.post("", response_model=BookingRead)
-def create_booking(data: BookingCreate, token_payload: dict = Depends(verify_token), session: Session = Depends(get_session)):
-    """Creates a new booking. The caller must be a registered Client."""
+def create_booking(
+    data: BookingCreate,
+    token_payload: dict = Depends(verify_token),
+    session: Session = Depends(get_session),
+    publisher: ServiceBusPublisher = Depends(get_service_bus_publisher),
+):
+    """Creates a new booking and publishes a 'booking.created' event to Service Bus.
+    The caller must be a registered Client."""
     entra_id = token_payload.get("oid") or token_payload.get("sub")
     client = session.exec(select(User).where(User.entra_id == entra_id)).first()
     if not client or client.role != UserRole.client:
@@ -29,6 +39,22 @@ def create_booking(data: BookingCreate, token_payload: dict = Depends(verify_tok
     session.add(booking)
     session.commit()
     session.refresh(booking)
+
+    # Fire the async notification. We publish *after* commit so the booking is
+    # safe even if Service Bus is unavailable; we log and swallow the publish
+    # error so the API contract isn't tied to Service Bus uptime.
+    event = {
+        "bookingId": booking.id,
+        "contractorEmail": contractor.email,
+        "clientEmail": client.email,
+        "date": booking.scheduled_at.isoformat(),
+        "notes": booking.notes,
+    }
+    try:
+        publisher.publish(event, subject="booking.created")
+    except Exception:
+        logger.exception("Failed to publish booking.created event for booking %s", booking.id)
+
     return booking
 
 @router.get("/mine", response_model=List[BookingRead])
@@ -54,7 +80,6 @@ class StatusPayload(BaseModel):
 @router.patch("/{booking_id}/status", response_model=BookingRead)
 def update_booking_status(booking_id: int, payload: StatusPayload, token_payload: dict = Depends(verify_token), session: Session = Depends(get_session)):
     """Allows a contractor to confirm or cancel a booking assigned to them."""
-    from app.models.domain import BookingStatus
     entra_id = token_payload.get("oid") or token_payload.get("sub")
     user = session.exec(select(User).where(User.entra_id == entra_id)).first()
     if not user:
