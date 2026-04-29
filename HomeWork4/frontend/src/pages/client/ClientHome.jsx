@@ -1,60 +1,77 @@
-import { useMsal } from "@azure/msal-react";
-import { useState } from "react";
-import axios from "axios";
+import { useState, useEffect } from 'react';
+import { useMsal } from '@azure/msal-react';
+import { getContractors } from '../../services/api';
+import ContractorCard from '../../components/ContractorCard';
+import Navbar from '../../components/Navbar';
 
 export default function ClientHome() {
     const { instance, accounts } = useMsal();
-    const name = accounts[0] && accounts[0].name;
-    const [backendResponse, setBackendResponse] = useState("");
+    const [contractors, setContractors] = useState([]);
+    const [filtered, setFiltered] = useState([]);
+    const [search, setSearch] = useState('');
+    const [loading, setLoading] = useState(true);
 
-    const handleLogout = () => {
-        instance.logoutRedirect({
-            postLogoutRedirectUri: "/",
-        });
-    };
+    useEffect(() => {
+        const fetchContractors = async () => {
+            try {
+                const { idToken } = await instance.acquireTokenSilent({
+                    scopes: ['openid', 'profile', 'email'],
+                    account: accounts[0],
+                });
+                const { data } = await getContractors(idToken);
+                setContractors(data);
+                setFiltered(data);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchContractors();
+    }, [instance, accounts]);
 
-    const testBackend = async () => {
-        try {
-            // 1. Get the raw JWT token silently from MSAL
-            const response = await instance.acquireTokenSilent({
-                scopes: ["openid", "profile", "email"],
-                account: accounts[0]
-            });
-
-            // 2. Send it to our FastAPI backend
-            const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
-            const res = await axios.get(`${apiUrl}/api/me`, {
-                headers: {
-                    Authorization: `Bearer ${response.idToken}`
-                }
-            });
-            
-            // 3. Display the response!
-            setBackendResponse(JSON.stringify(res.data, null, 2));
-        } catch (error) {
-            console.error(error);
-            setBackendResponse("Error testing backend. Is FastAPI running on port 8000?");
-        }
-    };
+    useEffect(() => {
+        const q = search.toLowerCase();
+        setFiltered(
+            contractors.filter(c =>
+                c.display_name.toLowerCase().includes(q) ||
+                (c.skills || '').toLowerCase().includes(q) ||
+                (c.bio || '').toLowerCase().includes(q)
+            )
+        );
+    }, [search, contractors]);
 
     return (
-        <div style={{ padding: '20px' }}>
-            <h1>Client Dashboard</h1>
-            <p>Welcome back, {name}!</p>
-            <p>Here you will be able to search for contractors and book appointments.</p>
-            
-            <div style={{ marginTop: '20px', padding: '10px', border: '1px solid #ccc' }}>
-                <h3>Test Phase 1 Architecture</h3>
-                <button onClick={testBackend}>Test Backend Authentication</button>
-                {backendResponse && (
-                    <pre style={{ marginTop: '10px', background: '#f4f4f4', padding: '10px' }}>
-                        {backendResponse}
-                    </pre>
+        <>
+            <Navbar />
+            <div className="page">
+                <div className="page-header">
+                    <h1>Find a Contractor</h1>
+                    <p>Browse skilled professionals and book your next appointment.</p>
+                </div>
+
+                <input
+                    className="input"
+                    placeholder="🔍  Search by name, skill, or keyword…"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    style={{ marginBottom: 28, maxWidth: 480 }}
+                />
+
+                {loading ? (
+                    <div className="empty-state"><span>⏳</span><p>Loading contractors…</p></div>
+                ) : filtered.length === 0 ? (
+                    <div className="empty-state">
+                        <span>🔎</span>
+                        <h3>No contractors found</h3>
+                        <p>{search ? 'Try a different search term.' : 'No contractors have signed up yet.'}</p>
+                    </div>
+                ) : (
+                    <div className="grid-3">
+                        {filtered.map(c => <ContractorCard key={c.id} contractor={c} />)}
+                    </div>
                 )}
             </div>
-
-            <br />
-            <button onClick={handleLogout}>Log Out</button>
-        </div>
+        </>
     );
 }

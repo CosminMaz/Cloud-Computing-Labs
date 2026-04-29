@@ -6,6 +6,29 @@ Here is the optimal, phased roadmap to build your Minimal Working Example (MVP) 
 
 ---
 
+## ✅ Progress Summary (as of 2026-04-29)
+
+### Phase 1 — COMPLETE
+- Entra External ID tenant (`hw4auth`) configured with `B2C_SignUpIn` user flow
+- App Registration (`hw4-react-fronted`) created with redirect URIs
+- `@azure/msal-react` integrated into the React frontend
+- `react-router-dom` set up with `ProtectedRoute` wrapper
+- FastAPI backend running with JWT verification via JWKS (`/api/me` stub, now replaced)
+- Role-aware routing: new users see a one-time **Select Role** page; returning users are routed directly to their dashboard
+
+### Phase 2 — COMPLETE
+- Azure SQL Database provisioned; local IP whitelisted; ODBC Driver 18 installed
+- SQLModel engine connected via `DATABASE_URL`; tables auto-created on startup (`User`, `ContractorProfile`, `Booking`)
+- Full API implemented: `POST /api/users/me` (upsert), `GET /api/contractors`, `GET /api/contractors/{id}`, `PUT /api/contractors/me`, `POST /api/bookings`, `GET /api/bookings/mine`, `PATCH /api/bookings/{id}/status`
+- Centralized Axios service layer (`src/services/api.js`)
+- Complete frontend overhaul: dark-mode design system, Navbar, ContractorCard, Client search grid with live filtering, Contractor profile & booking form, Contractor dashboard with bookings table + Accept/Decline/Complete actions + profile editor
+- End-to-end booking flow tested and verified
+
+### Phase 3 — UP NEXT
+> Blob Storage for contractor profile pictures
+
+---
+
 ## Phase 1: Identity & The Skeleton (Start Here)
 **Goal:** A React app that forces you to log in, determines if you are a Client or Contractor, and routes you to the correct (but empty) dashboard.
 

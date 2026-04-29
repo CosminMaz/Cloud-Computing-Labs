@@ -1,12 +1,17 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .core.auth import verify_token
+from contextlib import asynccontextmanager
+from app.core.database import init_db
+from app.core.config import settings
+from app.api import users, contractors, bookings
 
-from .core.config import settings
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
 
-app = FastAPI(title="Cloud CRM Backend")
+app = FastAPI(title="Cloud CRM Backend", lifespan=lifespan)
 
-# Setup CORS to allow React frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.FRONTEND_URL, "http://localhost:5173"],
@@ -15,18 +20,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(users.router, prefix="/api")
+app.include_router(contractors.router, prefix="/api")
+app.include_router(bookings.router, prefix="/api")
+
 @app.get("/")
 def read_root():
     return {"message": "FastAPI Backend is running!"}
 
-@app.get("/api/me")
-def get_current_user(token_payload: dict = Depends(verify_token)):
-    """
-    This route is protected by the verify_token dependency.
-    If the code reaches here, the token is 100% mathematically verified!
-    """
-    return {
-        "message": "Authentication successful! Your backend has securely verified your Microsoft token.",
-        "user_id": token_payload.get("oid"),
-        "raw_token_data": token_payload
-    }
