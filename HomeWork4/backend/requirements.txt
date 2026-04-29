@@ -5,3 +5,5 @@ python-dotenv
 python-jose
 httpx
 pyodbc
+azure-storage-blob
+python-multipart

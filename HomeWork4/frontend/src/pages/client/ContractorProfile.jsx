@@ -58,7 +58,18 @@ export default function ContractorProfile() {
 
                 <div className="card" style={{ marginBottom: 24 }}>
                     <div className="flex items-center gap-4" style={{ marginBottom: 20 }}>
-                        <div className="avatar avatar-lg">{initials}</div>
+                        {contractor.profile_image_url ? (
+                            <img
+                                src={contractor.profile_image_url}
+                                alt={contractor.display_name}
+                                style={{
+                                    width: 72, height: 72, borderRadius: '50%', objectFit: 'cover',
+                                    border: '1px solid var(--border)', flexShrink: 0,
+                                }}
+                            />
+                        ) : (
+                            <div className="avatar avatar-lg">{initials}</div>
+                        )}
                         <div>
                             <h2>{contractor.display_name}</h2>
                             <span className="badge badge-accent" style={{ marginTop: 6 }}>

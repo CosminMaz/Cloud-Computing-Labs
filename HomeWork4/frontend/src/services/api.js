@@ -29,6 +29,14 @@ export const getContractor = (token, id) =>
 export const updateMyProfile = (token, data) =>
     api.put('/api/contractors/me', data, { headers: { Authorization: `Bearer ${token}` } });
 
+export const uploadProfilePicture = (token, file) => {
+    const form = new FormData();
+    form.append('file', file);
+    return api.post('/api/upload-profile-picture', form, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+};
+
 // ── Bookings ───────────────────────────────────────────
 export const createBooking = (token, data) =>
     api.post('/api/bookings', data, { headers: { Authorization: `Bearer ${token}` } });

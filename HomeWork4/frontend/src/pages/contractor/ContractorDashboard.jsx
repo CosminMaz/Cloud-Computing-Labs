@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useMsal } from '@azure/msal-react';
-import { getMyBookings, updateMyProfile, updateBookingStatus } from '../../services/api';
+import { getMyBookings, updateMyProfile, updateBookingStatus, uploadProfilePicture } from '../../services/api';
 import Navbar from '../../components/Navbar';
 
 const STATUS_BADGE = {
@@ -15,9 +15,12 @@ export default function ContractorDashboard() {
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState(null); // booking id being updated
-    const [profile, setProfile] = useState({ display_name: '', skills: '', hourly_rate: '', bio: '' });
+    const [profile, setProfile] = useState({ display_name: '', skills: '', hourly_rate: '', bio: '', profile_image_url: '' });
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [uploadError, setUploadError] = useState(null);
+    const fileInputRef = useRef(null);
 
     useEffect(() => {
         const fetch = async () => {
@@ -47,14 +50,48 @@ export default function ContractorDashboard() {
         setSaving(true);
         try {
             const { idToken } = await instance.acquireTokenSilent({ scopes: ['openid', 'profile', 'email'], account: accounts[0] });
-            await updateMyProfile(idToken, {
-                ...profile,
+            const { data } = await updateMyProfile(idToken, {
+                display_name: profile.display_name,
+                skills: profile.skills,
                 hourly_rate: parseFloat(profile.hourly_rate) || 0,
+                bio: profile.bio,
             });
+            // Keep the freshly returned image url in sync (server is source of truth).
+            setProfile(p => ({ ...p, profile_image_url: data.profile_image_url || p.profile_image_url }));
             setSaved(true);
             setTimeout(() => setSaved(false), 3000);
         } catch (err) { console.error(err); }
         finally { setSaving(false); }
+    };
+
+    const handlePickFile = () => fileInputRef.current?.click();
+
+    const handleFileChange = async (e) => {
+        const file = e.target.files?.[0];
+        e.target.value = ''; // allow re-selecting same file
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            setUploadError('Please choose an image file.');
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            setUploadError('Image must be smaller than 5 MB.');
+            return;
+        }
+
+        setUploading(true);
+        setUploadError(null);
+        try {
+            const { idToken } = await instance.acquireTokenSilent({ scopes: ['openid', 'profile', 'email'], account: accounts[0] });
+            const { data } = await uploadProfilePicture(idToken, file);
+            setProfile(p => ({ ...p, profile_image_url: data.profile_image_url }));
+        } catch (err) {
+            console.error(err);
+            setUploadError(err.response?.data?.detail || 'Upload failed. Did you save your profile first?');
+        } finally {
+            setUploading(false);
+        }
     };
 
     const stats = {
@@ -163,6 +200,46 @@ export default function ContractorDashboard() {
                 {/* Edit Profile */}
                 <div className="card">
                     <h3 style={{ marginBottom: 20 }}>Edit Your Profile</h3>
+
+                    {/* Profile picture upload */}
+                    <div className="flex items-center gap-4" style={{ marginBottom: 24 }}>
+                        {profile.profile_image_url ? (
+                            <img
+                                src={profile.profile_image_url}
+                                alt="Profile"
+                                style={{
+                                    width: 72, height: 72, borderRadius: '50%', objectFit: 'cover',
+                                    border: '1px solid var(--border)',
+                                }}
+                            />
+                        ) : (
+                            <div className="avatar avatar-lg">📷</div>
+                        )}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                onChange={handleFileChange}
+                                style={{ display: 'none' }}
+                            />
+                            <button
+                                type="button"
+                                className="btn btn-outline"
+                                onClick={handlePickFile}
+                                disabled={uploading}
+                            >
+                                {uploading ? 'Uploading…' : profile.profile_image_url ? 'Change picture' : 'Upload picture'}
+                            </button>
+                            {uploadError && (
+                                <span style={{ color: 'var(--danger)', fontSize: '0.8rem' }}>{uploadError}</span>
+                            )}
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                                JPG, PNG, WEBP or GIF — up to 5 MB.
+                            </span>
+                        </div>
+                    </div>
+
                     <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                         <div className="form-group">
                             <label htmlFor="display_name">Display Name</label>
