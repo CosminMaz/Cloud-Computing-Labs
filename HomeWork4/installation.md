@@ -60,6 +60,10 @@ Variables you'll need (all are documented inline in `.env.example`):
 | `AZURE_STORAGE_CONTAINER` | default `profile-pictures` |
 | `AZURE_SERVICE_BUS_CONNECTION_STRING` | Service Bus namespace → Shared access policies → `RootManageSharedAccessKey` |
 | `AZURE_SERVICE_BUS_QUEUE` | default `booking-events` |
+| `AZURE_LANGUAGE_ENDPOINT` | Language resource → Keys and Endpoint → Endpoint |
+| `AZURE_LANGUAGE_KEY` | Language resource → Keys and Endpoint → Key 1 |
+| `AZURE_LANGUAGE_PROJECT` | the project name you created in Language Studio (e.g. `cloudcrm-faq`) |
+| `AZURE_LANGUAGE_DEPLOYMENT` | the deployment name from Language Studio (default `production`) |
 
 ### Run
 
@@ -85,7 +89,8 @@ Fill in `.env`:
 |---|---|
 | `VITE_ENTRA_CLIENT_ID`, `VITE_ENTRA_TENANT_ID`, `VITE_ENTRA_AUTHORITY` | same Entra app registration as the backend |
 | `VITE_API_URL` | usually `http://localhost:8000` |
-| `VITE_BOT_WEBCHAT_URL` | Azure Bot resource → Channels → Web Chat → embed URL (with Direct Line secret). Leave empty to hide the FAQ chat panel. |
+
+> The FAQ chat on contractor profiles calls the backend (`POST /api/chat/ask`), which proxies to Custom Question Answering. No frontend secret needed.
 
 Run:
 

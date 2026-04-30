@@ -58,6 +58,7 @@ Mirror the backend `.env` (see [`backend/.env.example`](backend/.env.example)):
 - `DATABASE_URL`
 - `AZURE_STORAGE_CONNECTION_STRING`, `AZURE_STORAGE_CONTAINER`
 - `AZURE_SERVICE_BUS_CONNECTION_STRING`, `AZURE_SERVICE_BUS_QUEUE`
+- `AZURE_LANGUAGE_ENDPOINT`, `AZURE_LANGUAGE_KEY`, `AZURE_LANGUAGE_PROJECT`, `AZURE_LANGUAGE_DEPLOYMENT`
 
 Also confirm the App Service has **CORS** allowing the Static Web App URL.
 
@@ -75,7 +76,6 @@ Vite bakes these into the bundle, so set them **before `npm run build`** (locall
 
 - `VITE_ENTRA_CLIENT_ID`, `VITE_ENTRA_TENANT_ID`, `VITE_ENTRA_AUTHORITY`
 - `VITE_API_URL` — the deployed App Service URL
-- `VITE_BOT_WEBCHAT_URL` — Bot Service Web Chat embed URL
 
 ---
 

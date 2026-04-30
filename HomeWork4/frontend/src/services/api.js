@@ -46,3 +46,7 @@ export const getMyBookings = (token) =>
 
 export const updateBookingStatus = (token, bookingId, status) =>
     api.patch(`/api/bookings/${bookingId}/status`, { status }, { headers: { Authorization: `Bearer ${token}` } });
+
+// ── Chat / FAQ bot ─────────────────────────────────────
+export const askChatbot = (token, question) =>
+    api.post('/api/chat/ask', { question }, { headers: { Authorization: `Bearer ${token}` } });

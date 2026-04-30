@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useMsal } from '@azure/msal-react';
 import { getContractor, createBooking } from '../../services/api';
 import Navbar from '../../components/Navbar';
+import FaqChatbot from '../../components/FaqChatbot';
 
 export default function ContractorProfile() {
     const { id } = useParams();
@@ -85,6 +86,13 @@ export default function ContractorProfile() {
                             {skills.map(s => <span key={s} className="badge badge-accent">{s}</span>)}
                         </div>
                     )}
+                </div>
+
+                <div style={{ marginBottom: 24 }}>
+                    <FaqChatbot
+                        title={`Ask ${contractor.display_name}'s FAQ bot`}
+                        subtitle="Common questions answered instantly — try it before you book."
+                    />
                 </div>
 
                 <div className="card">
