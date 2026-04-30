@@ -1,16 +1,20 @@
 import { useState, useRef, useEffect } from 'react';
 import { useMsal } from '@azure/msal-react';
 import { askChatbot } from '../services/api';
+import { Icon, PulseDot } from './DesignSystem';
 
-const GREETING = "Hi! Ask me anything about scheduling, rates, or coverage area.";
+const SUGGESTIONS = [
+    'Do you do emergency calls?',
+    'How far do you travel?',
+    'What\'s your hourly rate?',
+    'Are you licensed?',
+];
 
-/**
- * Chat-style UI backed by Custom Question Answering. Sends user questions
- * through the backend (POST /api/chat/ask) so the CQA key stays server-side.
- */
-export default function FaqChatbot({ title = 'FAQ Bot', subtitle, height = 420 }) {
+export default function FaqChatbot({ contractorName = 'their' }) {
     const { instance, accounts } = useMsal();
-    const [messages, setMessages] = useState([{ role: 'bot', text: GREETING }]);
+    const [messages, setMessages] = useState([
+        { role: 'bot', text: `Hi — I'm ${contractorName}'s digital answer-line. Ask anything before you book.` },
+    ]);
     const [input, setInput] = useState('');
     const [sending, setSending] = useState(false);
     const scrollRef = useRef(null);
@@ -19,21 +23,17 @@ export default function FaqChatbot({ title = 'FAQ Bot', subtitle, height = 420 }
         scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
     }, [messages, sending]);
 
-    const handleSend = async (e) => {
-        e.preventDefault();
-        const question = input.trim();
-        if (!question || sending) return;
-
+    const handleSend = async (question) => {
+        const q = (question || input).trim();
+        if (!q || sending) return;
         setInput('');
-        setMessages(prev => [...prev, { role: 'user', text: question }]);
+        setMessages(prev => [...prev, { role: 'user', text: q }]);
         setSending(true);
-
         try {
             const { idToken } = await instance.acquireTokenSilent({
-                scopes: ['openid', 'profile', 'email'],
-                account: accounts[0],
+                scopes: ['openid', 'profile', 'email'], account: accounts[0],
             });
-            const { data } = await askChatbot(idToken, question);
+            const { data } = await askChatbot(idToken, q);
             setMessages(prev => [...prev, { role: 'bot', text: data.answer }]);
         } catch (err) {
             console.error(err);
@@ -43,81 +43,69 @@ export default function FaqChatbot({ title = 'FAQ Bot', subtitle, height = 420 }
         }
     };
 
+    const showSuggestions = messages.length <= 2 && !sending;
+
     return (
-        <div className="card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)' }}>
-                <h3>💬 {title}</h3>
-                {subtitle && <p style={{ fontSize: '0.8rem', marginTop: 4 }}>{subtitle}</p>}
+        <div style={{ marginTop: 36 }}>
+            <div className="label-cap" style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
+                ask before you book <PulseDot/>
             </div>
 
-            <div
-                ref={scrollRef}
-                style={{
-                    height,
-                    overflowY: 'auto',
-                    padding: '16px 24px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 10,
-                    background: 'var(--bg-base)',
-                }}
-            >
-                {messages.map((m, i) => (
-                    <div
-                        key={i}
-                        style={{
+            <div className="cc-card" style={{ padding: 0, overflow: 'hidden' }}>
+                <div ref={scrollRef} style={{
+                    padding: '20px 22px', maxHeight: 280, overflowY: 'auto',
+                    display: 'flex', flexDirection: 'column', gap: 12,
+                }}>
+                    {messages.map((m, i) => (
+                        <div key={i} style={{
                             alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
-                            maxWidth: '78%',
-                            padding: '8px 14px',
-                            borderRadius: 'var(--radius-md)',
-                            background: m.role === 'user' ? 'var(--accent)' : 'var(--bg-elevated)',
-                            color: m.role === 'user' ? '#fff' : 'var(--text-primary)',
-                            fontSize: '0.88rem',
-                            lineHeight: 1.5,
-                            whiteSpace: 'pre-wrap',
-                            wordBreak: 'break-word',
-                        }}
-                    >
-                        {m.text}
-                    </div>
-                ))}
-                {sending && (
-                    <div
-                        style={{
-                            alignSelf: 'flex-start',
-                            padding: '8px 14px',
-                            borderRadius: 'var(--radius-md)',
-                            background: 'var(--bg-elevated)',
-                            color: 'var(--text-muted)',
-                            fontSize: '0.88rem',
-                        }}
-                    >
-                        …thinking
+                            maxWidth: '78%', padding: '10px 14px',
+                            background: m.role === 'user' ? 'var(--ink)' : 'var(--paper-2)',
+                            color: m.role === 'user' ? 'var(--paper)' : 'var(--ink)',
+                            fontSize: 13.5, lineHeight: 1.5, borderRadius: 4,
+                            animation: 'cc-fade-up 220ms var(--ease-out)',
+                            whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                        }}>
+                            {m.text}
+                        </div>
+                    ))}
+                    {sending && (
+                        <div style={{ alignSelf: 'flex-start', padding: '10px 14px', background: 'var(--paper-2)', borderRadius: 4 }}>
+                            <span style={{ display: 'inline-flex', gap: 4 }}>
+                                {[0,1,2].map(i => (
+                                    <span key={i} style={{
+                                        width: 5, height: 5, borderRadius: '50%', background: 'var(--ink-3)',
+                                        animation: `cc-pulse-dot 1.2s ${i*0.15}s infinite`,
+                                        display: 'inline-block',
+                                    }}/>
+                                ))}
+                            </span>
+                        </div>
+                    )}
+                </div>
+
+                {showSuggestions && (
+                    <div style={{ padding: '0 22px 14px', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        {SUGGESTIONS.map(s => (
+                            <button key={s} onClick={() => handleSend(s)}
+                                className="cc-btn cc-btn-sm cc-btn-ghost"
+                                style={{ background: 'var(--paper-2)', fontSize: 11.5 }}>
+                                {s}
+                            </button>
+                        ))}
                     </div>
                 )}
-            </div>
 
-            <form
-                onSubmit={handleSend}
-                style={{
-                    display: 'flex',
-                    gap: 8,
-                    padding: 16,
-                    borderTop: '1px solid var(--border)',
-                }}
-            >
-                <input
-                    className="input"
-                    placeholder="Type your question…"
-                    value={input}
-                    onChange={e => setInput(e.target.value)}
-                    disabled={sending}
-                    style={{ flex: 1 }}
-                />
-                <button type="submit" className="btn btn-primary" disabled={sending || !input.trim()}>
-                    Send
-                </button>
-            </form>
+                <form onSubmit={e => { e.preventDefault(); handleSend(); }}
+                      style={{ padding: 14, borderTop: '1px solid var(--rule)', display: 'flex', gap: 8 }}>
+                    <input className="cc-input" placeholder="type a question…"
+                        value={input} onChange={e => setInput(e.target.value)}
+                        disabled={sending} style={{ flex: 1 }}/>
+                    <button type="submit" className="cc-btn cc-btn-primary" disabled={!input.trim() || sending}>
+                        <Icon name="arrow" size={14}/>
+                    </button>
+                </form>
+            </div>
         </div>
     );
 }
