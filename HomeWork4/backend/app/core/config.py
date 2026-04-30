@@ -13,5 +13,7 @@ class Settings:
     AZURE_STORAGE_CONTAINER = os.getenv("AZURE_STORAGE_CONTAINER", "profile-pictures")
     AZURE_SERVICE_BUS_CONNECTION_STRING = os.getenv("AZURE_SERVICE_BUS_CONNECTION_STRING", "")
     AZURE_SERVICE_BUS_QUEUE = os.getenv("AZURE_SERVICE_BUS_QUEUE", "booking-events")
+    ENTRA_CLIENT_SECRET = os.getenv("ENTRA_CLIENT_SECRET", "")
+    ENTRA_BACKEND_CLIENT_ID = os.getenv("ENTRA_BACKEND_CLIENT_ID", "")
 
 settings = Settings()

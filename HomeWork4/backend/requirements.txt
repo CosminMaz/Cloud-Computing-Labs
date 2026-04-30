@@ -4,7 +4,7 @@ sqlmodel
 python-dotenv
 python-jose
 httpx
-pyodbc
+pymssql
 azure-storage-blob
 azure-servicebus
 python-multipart

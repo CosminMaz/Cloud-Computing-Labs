@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from app.core.database import get_session
 from app.core.auth import verify_token
+from app.core.graph import get_user_email_from_graph
 from app.models.domain import User
 from app.schemas.user import UserCreate, UserRead
 
@@ -21,8 +22,9 @@ def upsert_me(payload: UserCreate, token_payload: dict = Depends(verify_token), 
         token_payload.get("email") or
         token_payload.get("preferred_username") or
         token_payload.get("upn") or
-        # Fallback: email claim not configured in Entra user flow Application Claims.
-        # Use a placeholder derived from the unique OID so the unique DB constraint is satisfied.
+        # JWT doesn't carry email in CIAM — fetch it from Graph API instead
+        get_user_email_from_graph(entra_id) or
+        # Final fallback if Graph also fails (missing secret, network error, etc.)
         f"{entra_id}@no-email.ciam"
     )
 

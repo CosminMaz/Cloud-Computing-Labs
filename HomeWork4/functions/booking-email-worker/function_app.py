@@ -26,4 +26,15 @@ def on_booking_created(msg: func.ServiceBusMessage) -> None:
         # route this to a dead-letter queue instead.
         return
 
-    EmailService.from_env().send_booking_notification(event)
+    try:
+        EmailService.from_env().send_booking_notification(event)
+    except Exception as exc:
+        # Log and swallow: returning normally tells Service Bus the message is
+        # "handled" so it won't be retried. In production you'd push failures
+        # to a dead-letter queue or an alerting system instead.
+        logging.error(
+            "Failed to send booking email for bookingId=%s: %s",
+            event.get("bookingId"),
+            exc,
+        )
+
