@@ -90,8 +90,9 @@ export default function ContractorProfile() {
 
                 <div style={{ marginBottom: 24 }}>
                     <FaqChatbot
-                        title={`Ask ${contractor.display_name}'s FAQ bot`}
-                        subtitle="Common questions answered instantly — try it before you book."
+                        title={`Ask ${contractor.display_name}'s assistant`}
+                        subtitle="Ask about availability, rates, or services before booking."
+                        contractorId={contractor.id}
                     />
                 </div>
 

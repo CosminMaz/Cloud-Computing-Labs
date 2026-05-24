@@ -1,14 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { useMsal } from '@azure/msal-react';
+import ReactMarkdown from 'react-markdown';
 import { askChatbot } from '../services/api';
 
-const GREETING = "Hi! Ask me anything about scheduling, rates, or coverage area.";
+const GREETING = "Hi! Ask me anything about this contractor's services, rates, or availability.";
 
 /**
- * Chat-style UI backed by Custom Question Answering. Sends user questions
- * through the backend (POST /api/chat/ask) so the CQA key stays server-side.
+ * Chat-style UI backed by Gemini. Sends conversation history + contractor context
+ * through the backend (POST /api/chat/ask) so the API key stays server-side.
  */
-export default function FaqChatbot({ title = 'FAQ Bot', subtitle, height = 420 }) {
+export default function FaqChatbot({ title = 'FAQ Bot', subtitle, height = 420, contractorId }) {
     const { instance, accounts } = useMsal();
     const [messages, setMessages] = useState([{ role: 'bot', text: GREETING }]);
     const [input, setInput] = useState('');
@@ -25,6 +26,11 @@ export default function FaqChatbot({ title = 'FAQ Bot', subtitle, height = 420 }
         if (!question || sending) return;
 
         setInput('');
+        // Build history from existing messages (skip index 0 — that's the UI greeting, not a real AI turn)
+        const history = messages.slice(1).map(m => ({
+            role: m.role === 'bot' ? 'model' : 'user',
+            text: m.text,
+        }));
         setMessages(prev => [...prev, { role: 'user', text: question }]);
         setSending(true);
 
@@ -33,7 +39,7 @@ export default function FaqChatbot({ title = 'FAQ Bot', subtitle, height = 420 }
                 scopes: ['openid', 'profile', 'email'],
                 account: accounts[0],
             });
-            const { data } = await askChatbot(idToken, question);
+            const { data } = await askChatbot(idToken, { question, contractorId, history });
             setMessages(prev => [...prev, { role: 'bot', text: data.answer }]);
         } catch (err) {
             console.error(err);
@@ -74,11 +80,13 @@ export default function FaqChatbot({ title = 'FAQ Bot', subtitle, height = 420 }
                             color: m.role === 'user' ? '#fff' : 'var(--text-primary)',
                             fontSize: '0.88rem',
                             lineHeight: 1.5,
-                            whiteSpace: 'pre-wrap',
                             wordBreak: 'break-word',
                         }}
                     >
-                        {m.text}
+                        {m.role === 'bot'
+                            ? <div className="markdown-body"><ReactMarkdown>{m.text}</ReactMarkdown></div>
+                            : m.text
+                        }
                     </div>
                 ))}
                 {sending && (

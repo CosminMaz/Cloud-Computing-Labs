@@ -248,3 +248,18 @@ tr:hover td { background: var(--bg-elevated); color: var(--text-primary); }
 /* ===== Page Header ===== */
 .page-header { margin-bottom: 32px; }
 .page-header p { margin-top: 6px; }
+
+/* ===== Markdown Rendering (Bot Chat) ===== */
+.markdown-body {
+  color: inherit;
+}
+.markdown-body p { margin-bottom: 0.8em; color: inherit; }
+.markdown-body p:last-child { margin-bottom: 0; }
+.markdown-body ul, .markdown-body ol { 
+  margin-left: 1.5em; 
+  margin-bottom: 0.8em; 
+  padding-left: 0;
+}
+.markdown-body ul:last-child, .markdown-body ol:last-child { margin-bottom: 0; }
+.markdown-body li { margin-bottom: 0.3em; }
+.markdown-body strong { color: #fff; font-weight: 600; }

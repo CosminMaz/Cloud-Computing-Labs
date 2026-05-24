@@ -75,9 +75,9 @@ For a team of 4, you **must use 9 Cloud Services/APIs**. Here is a proposed arch
 *   **Cost:** Basic tier is extremely cheap (fractions of a cent per 10k operations).
 
 ### AI & Communication Layer
-**8. Azure AI Language (QnA Maker) / Bot Service**
-*   **Purpose:** Host a simple conversational chatbot for contractor profiles. We will employ the simplest implementation (a QnA FAQ Bot) where contractors upload a text file with their FAQs, and the bot handles answering them automatically.
-*   **Cost:** Standard channels are free. The backing AI Language resource uses a negligible amount of your free student credits.
+**8. Google Gemini API (`gemini-2.5-flash`)**
+*   **Purpose:** Power the conversational chatbot embedded on contractor profiles. Replaces Azure CQA/Bot Service. The backend proxies client questions to the Gemini LLM and returns the generated answer.
+*   **Cost:** Free tier via Google AI Studio (no credit card required). Does not consume Azure student credits.
 
 **9. Azure Communication Services (Email)**
 *   **Purpose:** The Azure Function uses this native service to actually send the booking confirmation emails simply and reliably.

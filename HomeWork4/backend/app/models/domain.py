@@ -44,6 +44,7 @@ class ContractorProfile(SQLModel, table=True):
     hourly_rate: float = Field(default=0.0)
     bio: Optional[str] = Field(default=None)
     profile_image_url: Optional[str] = Field(default=None)
+    ai_custom_prompt: Optional[str] = Field(default=None)
     
     # Relationship
     user: User = Relationship(back_populates="profile")

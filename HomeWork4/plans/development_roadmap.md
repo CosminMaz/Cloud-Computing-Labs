@@ -85,14 +85,21 @@ Here is the optimal, phased roadmap to build your Minimal Working Example (MVP) 
 
 ---
 
-## Phase 5: AI Integration (The Polish)
-**Goal:** Contractors have an automated FAQ answering bot on their profile.
+## Phase 5: AI Integration (The Polish) — COMPLETE
+**Goal:** Contractors have an AI-powered FAQ bot on their profile that clients can talk to.
 
-**Azure Tasks:**
-1.  Go to Azure Language Studio. Create a "Custom Question Answering" project. Type in 5 or 6 dummy FAQs (e.g., "Do you work weekends? -> No."). Deploy the Knowledge Base and create the Bot Service.
+> **Note:** Azure Custom Question Answering (CQA) / Bot Service was dropped. We use the **Google Gemini API** (`gemini-2.5-flash`) instead — free tier, no Azure resource required.
 
-**Code Tasks:**
-1.  **Frontend Web Chat:** Grab the `<iframe>` or the JavaScript Web Chat snippet from your Azure Bot Service portal. Embed this component directly into the React "Contractor Profile" page so clients can talk to it!
+**Setup:**
+1.  Generate a free API key at [aistudio.google.com](https://aistudio.google.com/) → Get API key.
+2.  Add `GEMINI_API_KEY=<your_key>` to the backend `.env`.
+
+**Implementation:**
+-  `backend/app/services/gemini_service.py` — initializes the Gemini client and sends questions to the model.
+-  `backend/app/api/chat.py` — `POST /api/chat/ask` route that calls the Gemini service.
+-  `frontend/src/components/FaqChatbot.jsx` — custom chat UI that calls the backend route.
+
+**Next:** Add per-contractor system prompts so the bot knows which contractor it represents.
 
 ---
 

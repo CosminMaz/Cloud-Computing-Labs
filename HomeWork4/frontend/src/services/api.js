@@ -26,6 +26,9 @@ export const getContractors = (token) =>
 export const getContractor = (token, id) =>
     api.get(`/api/contractors/${id}`, { headers: { Authorization: `Bearer ${token}` } });
 
+export const getMyProfile = (token) =>
+    api.get('/api/contractors/me', { headers: { Authorization: `Bearer ${token}` } });
+
 export const updateMyProfile = (token, data) =>
     api.put('/api/contractors/me', data, { headers: { Authorization: `Bearer ${token}` } });
 
@@ -48,5 +51,7 @@ export const updateBookingStatus = (token, bookingId, status) =>
     api.patch(`/api/bookings/${bookingId}/status`, { status }, { headers: { Authorization: `Bearer ${token}` } });
 
 // ── Chat / FAQ bot ─────────────────────────────────────
-export const askChatbot = (token, question) =>
-    api.post('/api/chat/ask', { question }, { headers: { Authorization: `Bearer ${token}` } });
+export const askChatbot = (token, { question, contractorId, history }) =>
+    api.post('/api/chat/ask', { question, contractor_id: contractorId, history }, {
+        headers: { Authorization: `Bearer ${token}` },
+    });

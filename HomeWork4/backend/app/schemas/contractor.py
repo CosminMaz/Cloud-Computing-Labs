@@ -10,9 +10,13 @@ class ContractorProfileRead(SQLModel):
     bio: Optional[str] = None
     profile_image_url: Optional[str] = None
 
+class ContractorProfileSelf(ContractorProfileRead):
+    ai_custom_prompt: Optional[str] = None
+
 class ContractorProfileUpdate(SQLModel):
     display_name: Optional[str] = None
     skills: Optional[str] = None
     hourly_rate: Optional[float] = None
     bio: Optional[str] = None
     profile_image_url: Optional[str] = None
+    ai_custom_prompt: Optional[str] = None

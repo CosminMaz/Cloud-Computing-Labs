@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useMsal } from '@azure/msal-react';
-import { getMyBookings, updateMyProfile, updateBookingStatus, uploadProfilePicture } from '../../services/api';
+import { getMyBookings, getMyProfile, updateMyProfile, updateBookingStatus, uploadProfilePicture } from '../../services/api';
 import Navbar from '../../components/Navbar';
 
 const STATUS_BADGE = {
@@ -15,7 +15,7 @@ export default function ContractorDashboard() {
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState(null); // booking id being updated
-    const [profile, setProfile] = useState({ display_name: '', skills: '', hourly_rate: '', bio: '', profile_image_url: '' });
+    const [profile, setProfile] = useState({ display_name: '', skills: '', hourly_rate: '', bio: '', profile_image_url: '', ai_custom_prompt: '' });
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
     const [uploading, setUploading] = useState(false);
@@ -26,8 +26,22 @@ export default function ContractorDashboard() {
         const fetch = async () => {
             try {
                 const { idToken } = await instance.acquireTokenSilent({ scopes: ['openid', 'profile', 'email'], account: accounts[0] });
-                const { data } = await getMyBookings(idToken);
-                setBookings(data);
+                const [bookingsRes, profileRes] = await Promise.allSettled([
+                    getMyBookings(idToken),
+                    getMyProfile(idToken),
+                ]);
+                if (bookingsRes.status === 'fulfilled') setBookings(bookingsRes.value.data);
+                if (profileRes.status === 'fulfilled') {
+                    const p = profileRes.value.data;
+                    setProfile({
+                        display_name: p.display_name || '',
+                        skills: p.skills || '',
+                        hourly_rate: p.hourly_rate ?? '',
+                        bio: p.bio || '',
+                        profile_image_url: p.profile_image_url || '',
+                        ai_custom_prompt: p.ai_custom_prompt || '',
+                    });
+                }
             } catch (err) { console.error(err); }
             finally { setLoading(false); }
         };
@@ -55,6 +69,7 @@ export default function ContractorDashboard() {
                 skills: profile.skills,
                 hourly_rate: parseFloat(profile.hourly_rate) || 0,
                 bio: profile.bio,
+                ai_custom_prompt: profile.ai_custom_prompt || null,
             });
             // Keep the freshly returned image url in sync (server is source of truth).
             setProfile(p => ({ ...p, profile_image_url: data.profile_image_url || p.profile_image_url }));
@@ -260,6 +275,18 @@ export default function ContractorDashboard() {
                             <label htmlFor="bio">Bio</label>
                             <textarea id="bio" className="textarea" placeholder="Tell clients a bit about yourself…"
                                 value={profile.bio} onChange={e => setProfile(p => ({ ...p, bio: e.target.value }))} />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="ai_custom_prompt">AI Assistant Instructions</label>
+                            <textarea id="ai_custom_prompt" className="textarea"
+                                placeholder="e.g. I'm available Mon–Fri 8am–6pm. I don't handle emergency calls. Minimum charge is 150 RON."
+                                value={profile.ai_custom_prompt}
+                                onChange={e => setProfile(p => ({ ...p, ai_custom_prompt: e.target.value }))}
+                                style={{ minHeight: 100 }}
+                            />
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                This text is sent to the AI assistant so it can answer client questions accurately. Leave blank to use only your public profile.
+                            </span>
                         </div>
                         <div className="flex gap-3 items-center">
                             <button type="submit" className="btn btn-primary" disabled={saving}>

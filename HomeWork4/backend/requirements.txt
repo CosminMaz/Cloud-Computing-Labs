@@ -8,3 +8,4 @@ pymssql
 azure-storage-blob
 azure-servicebus
 python-multipart
+google-generativeai

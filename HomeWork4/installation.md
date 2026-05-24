@@ -60,10 +60,7 @@ Variables you'll need (all are documented inline in `.env.example`):
 | `AZURE_STORAGE_CONTAINER` | default `profile-pictures` |
 | `AZURE_SERVICE_BUS_CONNECTION_STRING` | Service Bus namespace → Shared access policies → `RootManageSharedAccessKey` |
 | `AZURE_SERVICE_BUS_QUEUE` | default `booking-events` |
-| `AZURE_LANGUAGE_ENDPOINT` | Language resource → Keys and Endpoint → Endpoint |
-| `AZURE_LANGUAGE_KEY` | Language resource → Keys and Endpoint → Key 1 |
-| `AZURE_LANGUAGE_PROJECT` | the project name you created in Language Studio (e.g. `cloudcrm-faq`) |
-| `AZURE_LANGUAGE_DEPLOYMENT` | the deployment name from Language Studio (default `production`) |
+| `GEMINI_API_KEY` | [aistudio.google.com](https://aistudio.google.com/) → Get API key (free tier, no credit card) |
 
 ### Run
 
@@ -90,7 +87,7 @@ Fill in `.env`:
 | `VITE_ENTRA_CLIENT_ID`, `VITE_ENTRA_TENANT_ID`, `VITE_ENTRA_AUTHORITY` | same Entra app registration as the backend |
 | `VITE_API_URL` | usually `http://localhost:8000` |
 
-> The FAQ chat on contractor profiles calls the backend (`POST /api/chat/ask`), which proxies to Custom Question Answering. No frontend secret needed.
+> The FAQ chat on contractor profiles calls the backend (`POST /api/chat/ask`), which proxies to the Google Gemini API (`gemini-2.5-flash`). No frontend secret needed.
 
 Run:
 
@@ -148,7 +145,7 @@ Once the three pieces are up:
 1. Open <http://localhost:5173> and sign in.
 2. As a **contractor**: fill in profile, upload a profile picture (verifies Blob).
 3. As a **client**: open a contractor's profile (verifies Blob read), use the
-   FAQ chat panel (verifies Bot Service), and submit a booking.
+   FAQ chat panel (verifies Gemini API), and submit a booking.
 4. Check your **`func start`** terminal — you should see the message arrive
    within ~2 seconds and an ACS 202 response.
 5. Check the contractor's email inbox — the notification should land within a
