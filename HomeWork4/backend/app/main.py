@@ -10,7 +10,7 @@ async def lifespan(app: FastAPI):
     init_db()
     yield
 
-app = FastAPI(title="Cloud CRM Backend", lifespan=lifespan)
+app = FastAPI(title="Reparo Backend", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

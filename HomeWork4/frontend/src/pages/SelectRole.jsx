@@ -48,7 +48,7 @@ export default function SelectRole() {
                 alignItems: 'center', justifyContent: 'center', gap: 32, padding: '80px 24px'
             }}>
                 <div style={{ textAlign: 'center' }}>
-                    <h1>Welcome to CloudCRM</h1>
+                    <h1>Welcome to Reparo</h1>
                     <p style={{ marginTop: 8 }}>Before we begin, tell us who you are.</p>
                 </div>
 

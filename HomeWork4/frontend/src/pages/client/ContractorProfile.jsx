@@ -11,7 +11,11 @@ export default function ContractorProfile() {
     const navigate = useNavigate();
     const [contractor, setContractor] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [scheduledAt, setScheduledAt] = useState('');
+    const [date, setDate] = useState('');
+    const [time, setTime] = useState('');
+    const [serviceType, setServiceType] = useState('');
+    const [serviceAddress, setServiceAddress] = useState('');
+    const [clientPhone, setClientPhone] = useState('');
     const [notes, setNotes] = useState('');
     const [booking, setBooking] = useState(null);
     const [submitting, setSubmitting] = useState(false);
@@ -31,12 +35,16 @@ export default function ContractorProfile() {
     const handleBook = async (e) => {
         e.preventDefault();
         setSubmitting(true);
+        const dt = new Date(`${date}T${time}:00`);
         try {
             const { idToken } = await instance.acquireTokenSilent({ scopes: ['openid', 'profile', 'email'], account: accounts[0] });
             const { data } = await createBooking(idToken, {
                 contractor_id: contractor.user_id,  // User.id, not ContractorProfile.id
-                scheduled_at: new Date(scheduledAt).toISOString(),
-                notes,
+                scheduled_at: dt.toISOString(),
+                service_type: serviceType,
+                service_address: serviceAddress || null,
+                client_phone: clientPhone || null,
+                notes: notes || null,
             });
             setBooking(data);
         } catch (err) { console.error(err); }
@@ -82,10 +90,39 @@ export default function ContractorProfile() {
                     {contractor.bio && <p style={{ marginBottom: 16 }}>{contractor.bio}</p>}
 
                     {skills.length > 0 && (
-                        <div className="flex gap-2" style={{ flexWrap: 'wrap' }}>
+                        <div className="flex gap-2" style={{ flexWrap: 'wrap', marginBottom: 24 }}>
                             {skills.map(s => <span key={s} className="badge badge-accent">{s}</span>)}
                         </div>
                     )}
+
+                    <div style={{ padding: '16px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-md)' }}>
+                        <div className="grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
+                            <div>
+                                <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: 4 }}>Phone</div>
+                                <div>{contractor.phone || 'Not specified'}</div>
+                            </div>
+                            <div>
+                                <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: 4 }}>Email</div>
+                                <div>{contractor.contact_email || 'Not specified'}</div>
+                            </div>
+                            <div>
+                                <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: 4 }}>Location</div>
+                                <div>{contractor.location || 'Not specified'}</div>
+                            </div>
+                            <div>
+                                <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: 4 }}>Experience</div>
+                                <div>{contractor.years_experience ? `${contractor.years_experience} years` : 'Not specified'}</div>
+                            </div>
+                            <div>
+                                <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: 4 }}>Website</div>
+                                {contractor.website ? (
+                                    <a href={contractor.website.startsWith('http') ? contractor.website : `https://${contractor.website}`} target="_blank" rel="noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none' }}>
+                                        {contractor.website.replace(/^https?:\/\//, '')}
+                                    </a>
+                                ) : '—'}
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div style={{ marginBottom: 24 }}>
@@ -107,16 +144,38 @@ export default function ContractorProfile() {
                         </div>
                     ) : (
                         <form onSubmit={handleBook} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                            <div className="form-group">
-                                <label htmlFor="scheduled_at">Date & Time</label>
-                                <input id="scheduled_at" type="datetime-local" className="input" required
-                                    value={scheduledAt} onChange={e => setScheduledAt(e.target.value)} />
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                                <div className="form-group">
+                                    <label className="label">Date</label>
+                                    <input className="input" type="date" required value={date} onChange={e => setDate(e.target.value)} />
+                                </div>
+                                <div className="form-group">
+                                    <label className="label">Time</label>
+                                    <input className="input" type="time" required value={time} onChange={e => setTime(e.target.value)} />
+                                </div>
                             </div>
+    
                             <div className="form-group">
-                                <label htmlFor="notes">Notes (optional)</label>
-                                <textarea id="notes" className="textarea" placeholder="Describe what you need…"
-                                    value={notes} onChange={e => setNotes(e.target.value)} />
+                                <label className="label">Service Type</label>
+                                <input className="input" placeholder="e.g. Plumbing Repair, Consultation" required value={serviceType} onChange={e => setServiceType(e.target.value)} />
                             </div>
+    
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                                <div className="form-group">
+                                    <label className="label">Your Phone Number</label>
+                                    <input className="input" type="tel" placeholder="+40 700 000 000" required value={clientPhone} onChange={e => setClientPhone(e.target.value)} />
+                                </div>
+                                <div className="form-group">
+                                    <label className="label">Service Address</label>
+                                    <input className="input" placeholder="Street, City or 'Remote'" required value={serviceAddress} onChange={e => setServiceAddress(e.target.value)} />
+                                </div>
+                            </div>
+    
+                            <div className="form-group">
+                                <label className="label">Details & Notes</label>
+                                <textarea className="textarea" placeholder="Describe the issue or requirements…" value={notes} onChange={e => setNotes(e.target.value)} />
+                            </div>
+    
                             <button type="submit" className="btn btn-primary" disabled={submitting}>
                                 {submitting ? 'Booking…' : 'Confirm Booking'}
                             </button>

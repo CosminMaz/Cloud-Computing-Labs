@@ -102,3 +102,83 @@ To maximize efficiency and minimize overlap, divide the team functionally across
 > [!IMPORTANT]
 > **User Review Requested**
 > Please review the architecture, modular codebase structure, and the work decomposition for your team. Does this division of labor look fair and understandable to everyone, or do you need me to adjust the responsibilities?
+
+---
+
+## 5. Pending Feature Roadmap (Post-MVP)
+
+Ordered by dependency and priority. Each tier should be completed before moving to the next.
+
+---
+
+### Tier 1 — Foundation (Navigation & Role Completeness) ✅ COMPLETE
+
+These fix fundamental gaps in the current experience. Other features depend on them being in place.
+
+1. ✅ **Separate contractor profile page** (`/contractor/profile`)
+   - Move the "Edit Your Profile" card out of the dashboard into its own route.
+   - Add view/edit toggle: read mode shows the profile nicely; "Edit" button switches to the form with Save/Cancel.
+   - Dashboard becomes bookings-only CRM.
+
+2. ✅ **Client bookings page** (`/client/bookings`) + Navbar links
+   - New page showing all bookings the client has made, with status badges, contractor name, date, and notes.
+   - Cancel button for `pending` bookings.
+   - "My Bookings" link added to client Navbar. Role-aware links added to Navbar for both roles.
+
+3. ✅ **Client cancel booking**
+   - Backend: guard on `PATCH /bookings/:id/status` — clients may only set `pending → cancelled` on their own bookings.
+   - Frontend: Cancel button on the client bookings page.
+   - Bonus: `cancelled_by` field tracks whether client or contractor cancelled.
+
+---
+
+### Tier 2 — Quick Wins (Low Effort, High Value)
+
+4. **More contractor profile fields**
+   - Add: `location` (city/region), `years_experience` (int), `website` (URL), `phone` (string).
+   - These enrich the public profile display and the AI assistant context automatically.
+   - Backend: new nullable columns on `ContractorProfile`. Frontend: new inputs on the profile edit page.
+
+5. **More email notifications via Service Bus**
+   - Currently only fires when a booking is created (email to contractor).
+   - Extend: when contractor confirms or declines, publish a new Service Bus message → worker sends email to the client.
+   - Same queue, same worker — add an `event_type` field (`booking_created` / `booking_confirmed` / `booking_cancelled`) to route the right template.
+
+6. **Profile completeness indicator**
+   - Small progress bar on the contractor profile page.
+   - Counts filled optional fields (bio, skills, hourly_rate, location, ai_custom_prompt, profile picture).
+   - Purely frontend, no backend changes.
+
+7. ✅ **"Copy profile link" button**
+   - One-click button on the contractor profile page that copies `/client/contractors/:id` to clipboard.
+   - Shipped as part of Tier 1 item 1.
+
+---
+
+### Tier 3 — Major Features
+
+8. **WebSocket real-time chat** (`/chat/:userId`)
+   - New `Message` DB table: `id, sender_id, receiver_id, content, created_at, is_read`.
+   - Backend: in-memory `ConnectionManager`, WebSocket endpoint at `/api/ws/{user_id}` (token via query param), REST endpoint `GET /api/messages/{other_user_id}` for history.
+   - Frontend: shared `/chat/:userId` page used by both roles. Chat button on each booking row (both client and contractor dashboards).
+   - Note: in-memory connection manager works for single App Service instance. Can be upgraded to Azure Web PubSub if scaling is needed.
+
+9. **Calendar view on contractor dashboard**
+   - Install `react-big-calendar` or `@fullcalendar/react`.
+   - Map bookings to calendar events, color-coded by status.
+   - Click event → scrolls to booking in the table below. Hover → tooltip with client info and notes.
+   - No backend changes needed.
+
+---
+
+### Tier 4 — Nice to Have
+
+10. **Rating & review system**
+    - After a booking reaches `completed`, the client can leave a 1–5 star rating + optional comment.
+    - New `Review` DB table. Aggregate rating displayed on contractor profile cards and profile page.
+    - Medium complexity: new DB table, CRUD endpoints, UI on client bookings page + contractor profile.
+
+11. **Search & filter improvements on client home**
+    - Backend: `GET /contractors` accepts query params (`skill`, `min_rate`, `max_rate`, `location`).
+    - Frontend: filter panel on `ClientHome` with dropdowns/sliders.
+    - Foundation already exists (search by name/skill is already implemented).

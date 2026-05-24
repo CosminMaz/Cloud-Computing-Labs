@@ -1,3 +1,4 @@
+from typing import Optional
 from sqlmodel import SQLModel
 from app.models.domain import UserRole
 
@@ -9,4 +10,5 @@ class UserRead(SQLModel):
     id: int
     entra_id: str
     email: str
+    display_name: Optional[str] = None
     role: UserRole

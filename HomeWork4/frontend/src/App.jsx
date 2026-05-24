@@ -10,7 +10,9 @@ import Navbar from './components/Navbar';
 import SelectRole from './pages/SelectRole';
 import ClientHome from './pages/client/ClientHome';
 import ContractorProfile from './pages/client/ContractorProfile';
+import ClientBookings from './pages/client/ClientBookings';
 import ContractorDashboard from './pages/contractor/ContractorDashboard';
+import ContractorProfilePage from './pages/contractor/ContractorProfilePage';
 
 function LandingPage() {
     const { instance, accounts } = useMsal();
@@ -64,7 +66,7 @@ function LandingPage() {
                     background: 'linear-gradient(135deg, #f0f2f8 0%, #6366f1 100%)',
                     WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
                 }}>
-                    CloudCRM
+                    Reparo
                 </div>
                 <p style={{ maxWidth: 400 }}>
                     The modern marketplace connecting skilled contractors with clients who need them.
@@ -91,10 +93,12 @@ function App() {
 
                 {/* Client Routes */}
                 <Route path="/client/home" element={<ProtectedRoute><ClientHome /></ProtectedRoute>} />
+                <Route path="/client/bookings" element={<ProtectedRoute><ClientBookings /></ProtectedRoute>} />
                 <Route path="/client/contractors/:id" element={<ProtectedRoute><ContractorProfile /></ProtectedRoute>} />
 
                 {/* Contractor Routes */}
                 <Route path="/contractor/dashboard" element={<ProtectedRoute><ContractorDashboard /></ProtectedRoute>} />
+                <Route path="/contractor/profile" element={<ProtectedRoute><ContractorProfilePage /></ProtectedRoute>} />
             </Routes>
         </BrowserRouter>
     );

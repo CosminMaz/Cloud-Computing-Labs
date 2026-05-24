@@ -17,6 +17,7 @@ class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     entra_id: str = Field(max_length=50, index=True, unique=True, description="Entra Object ID")
     email: str = Field(max_length=255, index=True, unique=True)
+    display_name: Optional[str] = Field(default=None, max_length=255)
     role: UserRole = Field(default=UserRole.client)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -46,6 +47,13 @@ class ContractorProfile(SQLModel, table=True):
     profile_image_url: Optional[str] = Field(default=None)
     ai_custom_prompt: Optional[str] = Field(default=None)
     
+    # New Tier 2 fields
+    phone: Optional[str] = Field(default=None, max_length=50)
+    contact_email: Optional[str] = Field(default=None, max_length=255)
+    location: Optional[str] = Field(default=None, max_length=255)
+    years_experience: Optional[int] = Field(default=0)
+    website: Optional[str] = Field(default=None, max_length=255)
+    
     # Relationship
     user: User = Relationship(back_populates="profile")
 
@@ -56,8 +64,15 @@ class Booking(SQLModel, table=True):
     
     status: BookingStatus = Field(default=BookingStatus.pending)
     scheduled_at: datetime
+    
+    # New Tier 2 CRM fields
+    service_type: Optional[str] = Field(default=None, max_length=255)
+    service_address: Optional[str] = Field(default=None)
+    client_phone: Optional[str] = Field(default=None, max_length=50)
+    
     notes: Optional[str] = Field(default=None)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    cancelled_by: Optional[str] = Field(default=None)
 
     # Relationships
     client: User = Relationship(

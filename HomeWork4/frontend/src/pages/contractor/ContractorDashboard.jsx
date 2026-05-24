@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { useMsal } from '@azure/msal-react';
-import { getMyBookings, getMyProfile, updateMyProfile, updateBookingStatus, uploadProfilePicture } from '../../services/api';
+import { useNavigate } from 'react-router-dom';
+import { getMyBookings, updateBookingStatus } from '../../services/api';
 import Navbar from '../../components/Navbar';
 
 const STATUS_BADGE = {
@@ -10,38 +11,26 @@ const STATUS_BADGE = {
     cancelled: 'badge-danger',
 };
 
+
 export default function ContractorDashboard() {
     const { instance, accounts } = useMsal();
+    const navigate = useNavigate();
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [updating, setUpdating] = useState(null); // booking id being updated
-    const [profile, setProfile] = useState({ display_name: '', skills: '', hourly_rate: '', bio: '', profile_image_url: '', ai_custom_prompt: '' });
-    const [saving, setSaving] = useState(false);
-    const [saved, setSaved] = useState(false);
-    const [uploading, setUploading] = useState(false);
-    const [uploadError, setUploadError] = useState(null);
-    const fileInputRef = useRef(null);
+    const [updating, setUpdating] = useState(null);
+    const [activeTab, setActiveTab] = useState('all');
+    const [search, setSearch] = useState('');
+    const [sortAsc, setSortAsc] = useState(false);
+    const [expandedId, setExpandedId] = useState(null);
+    const [dateFrom, setDateFrom] = useState('');
+    const [dateTo, setDateTo] = useState('');
 
     useEffect(() => {
         const fetch = async () => {
             try {
                 const { idToken } = await instance.acquireTokenSilent({ scopes: ['openid', 'profile', 'email'], account: accounts[0] });
-                const [bookingsRes, profileRes] = await Promise.allSettled([
-                    getMyBookings(idToken),
-                    getMyProfile(idToken),
-                ]);
-                if (bookingsRes.status === 'fulfilled') setBookings(bookingsRes.value.data);
-                if (profileRes.status === 'fulfilled') {
-                    const p = profileRes.value.data;
-                    setProfile({
-                        display_name: p.display_name || '',
-                        skills: p.skills || '',
-                        hourly_rate: p.hourly_rate ?? '',
-                        bio: p.bio || '',
-                        profile_image_url: p.profile_image_url || '',
-                        ai_custom_prompt: p.ai_custom_prompt || '',
-                    });
-                }
+                const { data } = await getMyBookings(idToken);
+                setBookings(data);
             } catch (err) { console.error(err); }
             finally { setLoading(false); }
         };
@@ -53,248 +42,186 @@ export default function ContractorDashboard() {
         try {
             const { idToken } = await instance.acquireTokenSilent({ scopes: ['openid', 'profile', 'email'], account: accounts[0] });
             const { data } = await updateBookingStatus(idToken, bookingId, status);
-            setBookings(prev => prev.map(b => b.id === bookingId ? data : b));
+            setBookings(prev => prev.map(b => b.id === bookingId ? { ...data, client_email: b.client_email, client_name: b.client_name } : b));
         } catch (err) { console.error(err); }
         finally { setUpdating(null); }
-    };
-
-
-    const handleSaveProfile = async (e) => {
-        e.preventDefault();
-        setSaving(true);
-        try {
-            const { idToken } = await instance.acquireTokenSilent({ scopes: ['openid', 'profile', 'email'], account: accounts[0] });
-            const { data } = await updateMyProfile(idToken, {
-                display_name: profile.display_name,
-                skills: profile.skills,
-                hourly_rate: parseFloat(profile.hourly_rate) || 0,
-                bio: profile.bio,
-                ai_custom_prompt: profile.ai_custom_prompt || null,
-            });
-            // Keep the freshly returned image url in sync (server is source of truth).
-            setProfile(p => ({ ...p, profile_image_url: data.profile_image_url || p.profile_image_url }));
-            setSaved(true);
-            setTimeout(() => setSaved(false), 3000);
-        } catch (err) { console.error(err); }
-        finally { setSaving(false); }
-    };
-
-    const handlePickFile = () => fileInputRef.current?.click();
-
-    const handleFileChange = async (e) => {
-        const file = e.target.files?.[0];
-        e.target.value = ''; // allow re-selecting same file
-        if (!file) return;
-
-        if (!file.type.startsWith('image/')) {
-            setUploadError('Please choose an image file.');
-            return;
-        }
-        if (file.size > 5 * 1024 * 1024) {
-            setUploadError('Image must be smaller than 5 MB.');
-            return;
-        }
-
-        setUploading(true);
-        setUploadError(null);
-        try {
-            const { idToken } = await instance.acquireTokenSilent({ scopes: ['openid', 'profile', 'email'], account: accounts[0] });
-            const { data } = await uploadProfilePicture(idToken, file);
-            setProfile(p => ({ ...p, profile_image_url: data.profile_image_url }));
-        } catch (err) {
-            console.error(err);
-            setUploadError(err.response?.data?.detail || 'Upload failed. Did you save your profile first?');
-        } finally {
-            setUploading(false);
-        }
     };
 
     const stats = {
         total: bookings.length,
         pending: bookings.filter(b => b.status === 'pending').length,
+        confirmed: bookings.filter(b => b.status === 'confirmed').length,
         completed: bookings.filter(b => b.status === 'completed').length,
+        cancelled: bookings.filter(b => b.status === 'cancelled').length,
     };
+
+    const q = search.toLowerCase();
+    const from = dateFrom ? new Date(dateFrom) : null;
+    const to = dateTo ? new Date(dateTo + 'T23:59:59') : null;
+    const visible = bookings
+        .filter(b => activeTab === 'all' || b.status === activeTab)
+        .filter(b => !q || (b.client_email || '').toLowerCase().includes(q) || (b.client_name || '').toLowerCase().includes(q) || (b.notes || '').toLowerCase().includes(q) || (b.service_type || '').toLowerCase().includes(q))
+        .filter(b => !from || new Date(b.scheduled_at) >= from)
+        .filter(b => !to || new Date(b.scheduled_at) <= to)
+        .sort((a, b) => sortAsc
+            ? new Date(a.scheduled_at) - new Date(b.scheduled_at)
+            : new Date(b.scheduled_at) - new Date(a.scheduled_at)
+        );
+
+    const statCardStyle = (filter) => ({
+        cursor: 'pointer',
+        outline: activeTab === filter ? '2px solid var(--accent)' : '2px solid transparent',
+        outlineOffset: 2,
+        borderRadius: 'var(--radius-md)',
+        transition: 'outline var(--transition)',
+    });
 
     return (
         <>
             <Navbar />
             <div className="page">
-                <div className="page-header">
-                    <h1>Contractor Dashboard</h1>
-                    <p>Manage your bookings and public profile.</p>
+                <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                        <h1>Dashboard</h1>
+                        <p>Manage your incoming bookings.</p>
+                    </div>
+                    <button className="btn btn-outline" onClick={() => navigate('/contractor/profile')}>
+                        My Profile
+                    </button>
                 </div>
 
-                {/* Stats */}
+                {/* Stats — click to filter */}
                 <div className="stats-bar">
-                    <div className="stat-card">
+                    <div className="stat-card" style={statCardStyle('all')} onClick={() => setActiveTab('all')}>
                         <span className="stat-value">{stats.total}</span>
-                        <span className="stat-label">Total Bookings</span>
+                        <span className="stat-label">Total</span>
                     </div>
-                    <div className="stat-card">
+                    <div className="stat-card" style={statCardStyle('pending')} onClick={() => setActiveTab(activeTab === 'pending' ? 'all' : 'pending')}>
                         <span className="stat-value" style={{ color: 'var(--warning)' }}>{stats.pending}</span>
                         <span className="stat-label">Pending</span>
                     </div>
-                    <div className="stat-card">
+                    <div className="stat-card" style={statCardStyle('confirmed')} onClick={() => setActiveTab(activeTab === 'confirmed' ? 'all' : 'confirmed')}>
+                        <span className="stat-value" style={{ color: 'var(--accent)' }}>{stats.confirmed}</span>
+                        <span className="stat-label">Confirmed</span>
+                    </div>
+                    <div className="stat-card" style={statCardStyle('completed')} onClick={() => setActiveTab(activeTab === 'completed' ? 'all' : 'completed')}>
                         <span className="stat-value" style={{ color: 'var(--success)' }}>{stats.completed}</span>
                         <span className="stat-label">Completed</span>
                     </div>
+                    <div className="stat-card" style={statCardStyle('cancelled')} onClick={() => setActiveTab(activeTab === 'cancelled' ? 'all' : 'cancelled')}>
+                        <span className="stat-value" style={{ color: 'var(--danger)' }}>{stats.cancelled}</span>
+                        <span className="stat-label">Cancelled</span>
+                    </div>
                 </div>
 
-                {/* Bookings Table */}
+                {/* Bookings */}
                 <div className="card" style={{ marginBottom: 28 }}>
-                    <h3 style={{ marginBottom: 16 }}>Upcoming Bookings</h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 16 }}>
+                        <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
+                            Bookings
+                            {activeTab !== 'all' && (
+                                <span className="badge" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px' }}>
+                                    {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
+                                    <button onClick={() => setActiveTab('all')} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}>✕</button>
+                                </span>
+                            )}
+                        </h3>
+                        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                            <input
+                                className="input"
+                                placeholder="Search client or notes…"
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                                style={{ width: 220 }}
+                            />
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <input type="date" className="input" value={dateFrom} onChange={e => setDateFrom(e.target.value)} title="From date" />
+                                <span style={{ color: 'var(--text-muted)' }}>–</span>
+                                <input type="date" className="input" value={dateTo} onChange={e => setDateTo(e.target.value)} title="To date" />
+                            </div>
+                            <button className="btn btn-outline" onClick={() => setSortAsc(v => !v)}>
+                                {sortAsc ? '↑ Oldest' : '↓ Newest'}
+                            </button>
+                        </div>
+                    </div>
+
                     {loading ? (
                         <div className="empty-state"><span>⏳</span></div>
-                    ) : bookings.length === 0 ? (
+                    ) : visible.length === 0 ? (
                         <div className="empty-state" style={{ padding: '30px 0' }}>
                             <span>📅</span>
-                            <p>No bookings yet. Share your profile link to get started!</p>
+                            <p>{search || dateFrom || dateTo ? 'No bookings match your filters.' : activeTab !== 'all' ? `No ${activeTab} bookings.` : 'No bookings yet. Share your profile link to get started!'}</p>
                         </div>
                     ) : (
                         <div className="table-wrap">
                             <table>
                                 <thead>
                                     <tr>
-                                        <th>#</th>
+                                        <th>Client</th>
+                                        <th>Service</th>
                                         <th>Date &amp; Time</th>
-                                        <th>Notes</th>
                                         <th>Status</th>
-                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {bookings.map(b => (
-                                        <tr key={b.id}>
-                                            <td>{b.id}</td>
-                                            <td>{new Date(b.scheduled_at).toLocaleString()}</td>
-                                            <td>{b.notes || '—'}</td>
-                                            <td><span className={`badge ${STATUS_BADGE[b.status] || ''}`}>{b.status}</span></td>
-                                            <td>
-                                                {b.status === 'pending' && (
-                                                    <div className="flex gap-2">
-                                                        <button
-                                                            className="btn btn-primary"
-                                                            style={{ padding: '4px 12px', fontSize: '0.78rem' }}
-                                                            disabled={updating === b.id}
-                                                            onClick={() => handleStatusUpdate(b.id, 'confirmed')}
-                                                        >
-                                                            {updating === b.id ? '…' : '✓ Accept'}
-                                                        </button>
-                                                        <button
-                                                            className="btn btn-danger"
-                                                            style={{ padding: '4px 12px', fontSize: '0.78rem' }}
-                                                            disabled={updating === b.id}
-                                                            onClick={() => handleStatusUpdate(b.id, 'cancelled')}
-                                                        >
-                                                            {updating === b.id ? '…' : '✗ Decline'}
-                                                        </button>
-                                                    </div>
-                                                )}
-                                                {b.status === 'confirmed' && (
-                                                    <button
-                                                        className="btn btn-outline"
-                                                        style={{ padding: '4px 12px', fontSize: '0.78rem' }}
-                                                        disabled={updating === b.id}
-                                                        onClick={() => handleStatusUpdate(b.id, 'completed')}
-                                                    >
-                                                        {updating === b.id ? '…' : '✓ Mark Complete'}
-                                                    </button>
-                                                )}
-                                                {(b.status === 'completed' || b.status === 'cancelled') && (
-                                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>—</span>
-                                                )}
-                                            </td>
-                                        </tr>
+                                    {visible.map(b => (
+                                        <Fragment key={b.id}>
+                                            <tr
+                                                style={{ cursor: 'pointer' }}
+                                                onClick={() => setExpandedId(expandedId === b.id ? null : b.id)}
+                                            >
+                                                <td>
+                                                    <div style={{ fontWeight: 500 }}>{b.client_name || '—'}</div>
+                                                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{b.client_email || ''}</div>
+                                                </td>
+                                                <td>
+                                                    <div style={{ fontWeight: 500 }}>{b.service_type || 'General Service'}</div>
+                                                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{b.service_address || 'No address specified'}</div>
+                                                </td>
+                                                <td>
+                                                    <div>{new Date(b.scheduled_at).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</div>
+                                                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{new Date(b.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                                </td>
+                                                <td>
+                                                    <span className={`badge ${STATUS_BADGE[b.status] || ''}`}>{b.status}</span>
+                                                    {b.status === 'cancelled' && b.cancelled_by && (
+                                                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 3 }}>by {b.cancelled_by}</div>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                            {expandedId === b.id && (
+                                                <tr>
+                                                    <td colSpan={4} style={{ background: 'var(--bg-elevated)', padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
+                                                        <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', fontSize: '0.85rem', marginBottom: 16 }}>
+                                                            <div><span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Booking ID</span> <strong>#{b.id}</strong></div>
+                                                            <div><span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Client</span> <strong>{b.client_name || '—'}</strong> <br/><span style={{ color: 'var(--text-muted)' }}>{b.client_email}</span><br/><span style={{ color: 'var(--text-muted)' }}>{b.client_phone || 'No phone'}</span></div>
+                                                            <div><span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Created</span> <strong>{new Date(b.created_at).toLocaleString()}</strong></div>
+                                                            {b.notes && <div style={{ maxWidth: 400 }}><span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Notes</span> {b.notes}</div>}
+                                                        </div>
+                                                        {b.status === 'pending' && (
+                                                            <div className="flex gap-3">
+                                                                <button className="btn btn-primary" style={{ borderRadius: 'var(--radius-sm)' }} disabled={updating === b.id} onClick={() => handleStatusUpdate(b.id, 'confirmed')}>
+                                                                    {updating === b.id ? '…' : '✓ Accept'}
+                                                                </button>
+                                                                <button className="btn btn-danger" style={{ borderRadius: 'var(--radius-sm)' }} disabled={updating === b.id} onClick={() => handleStatusUpdate(b.id, 'cancelled')}>
+                                                                    {updating === b.id ? '…' : '✗ Decline'}
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                        {b.status === 'confirmed' && (
+                                                            <button className="btn btn-outline" style={{ borderRadius: 'var(--radius-sm)' }} disabled={updating === b.id} onClick={() => handleStatusUpdate(b.id, 'completed')}>
+                                                                {updating === b.id ? '…' : '✓ Mark Complete'}
+                                                            </button>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </Fragment>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
                     )}
-                </div>
-
-                {/* Edit Profile */}
-                <div className="card">
-                    <h3 style={{ marginBottom: 20 }}>Edit Your Profile</h3>
-
-                    {/* Profile picture upload */}
-                    <div className="flex items-center gap-4" style={{ marginBottom: 24 }}>
-                        {profile.profile_image_url ? (
-                            <img
-                                src={profile.profile_image_url}
-                                alt="Profile"
-                                style={{
-                                    width: 72, height: 72, borderRadius: '50%', objectFit: 'cover',
-                                    border: '1px solid var(--border)',
-                                }}
-                            />
-                        ) : (
-                            <div className="avatar avatar-lg">📷</div>
-                        )}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept="image/*"
-                                onChange={handleFileChange}
-                                style={{ display: 'none' }}
-                            />
-                            <button
-                                type="button"
-                                className="btn btn-outline"
-                                onClick={handlePickFile}
-                                disabled={uploading}
-                            >
-                                {uploading ? 'Uploading…' : profile.profile_image_url ? 'Change picture' : 'Upload picture'}
-                            </button>
-                            {uploadError && (
-                                <span style={{ color: 'var(--danger)', fontSize: '0.8rem' }}>{uploadError}</span>
-                            )}
-                            <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
-                                JPG, PNG, WEBP or GIF — up to 5 MB.
-                            </span>
-                        </div>
-                    </div>
-
-                    <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                        <div className="form-group">
-                            <label htmlFor="display_name">Display Name</label>
-                            <input id="display_name" className="input" placeholder="e.g. Jane Smith" required
-                                value={profile.display_name} onChange={e => setProfile(p => ({ ...p, display_name: e.target.value }))} />
-                        </div>
-                        <div className="form-group">
-                            <label htmlFor="skills">Skills (comma-separated)</label>
-                            <input id="skills" className="input" placeholder="e.g. Plumbing, Electrical, Painting"
-                                value={profile.skills} onChange={e => setProfile(p => ({ ...p, skills: e.target.value }))} />
-                        </div>
-                        <div className="form-group">
-                            <label htmlFor="hourly_rate">Hourly Rate ($)</label>
-                            <input id="hourly_rate" type="number" min="0" step="0.01" className="input" placeholder="e.g. 50"
-                                value={profile.hourly_rate} onChange={e => setProfile(p => ({ ...p, hourly_rate: e.target.value }))} />
-                        </div>
-                        <div className="form-group">
-                            <label htmlFor="bio">Bio</label>
-                            <textarea id="bio" className="textarea" placeholder="Tell clients a bit about yourself…"
-                                value={profile.bio} onChange={e => setProfile(p => ({ ...p, bio: e.target.value }))} />
-                        </div>
-                        <div className="form-group">
-                            <label htmlFor="ai_custom_prompt">AI Assistant Instructions</label>
-                            <textarea id="ai_custom_prompt" className="textarea"
-                                placeholder="e.g. I'm available Mon–Fri 8am–6pm. I don't handle emergency calls. Minimum charge is 150 RON."
-                                value={profile.ai_custom_prompt}
-                                onChange={e => setProfile(p => ({ ...p, ai_custom_prompt: e.target.value }))}
-                                style={{ minHeight: 100 }}
-                            />
-                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                This text is sent to the AI assistant so it can answer client questions accurately. Leave blank to use only your public profile.
-                            </span>
-                        </div>
-                        <div className="flex gap-3 items-center">
-                            <button type="submit" className="btn btn-primary" disabled={saving}>
-                                {saving ? 'Saving…' : 'Save Profile'}
-                            </button>
-                            {saved && <span style={{ color: 'var(--success)', fontSize: '0.85rem' }}>✓ Profile saved!</span>}
-                        </div>
-                    </form>
                 </div>
             </div>
         </>

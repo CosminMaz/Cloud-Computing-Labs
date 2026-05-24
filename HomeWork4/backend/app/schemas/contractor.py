@@ -9,6 +9,11 @@ class ContractorProfileRead(SQLModel):
     hourly_rate: float
     bio: Optional[str] = None
     profile_image_url: Optional[str] = None
+    phone: Optional[str] = None
+    contact_email: Optional[str] = None
+    location: Optional[str] = None
+    years_experience: Optional[int] = 0
+    website: Optional[str] = None
 
 class ContractorProfileSelf(ContractorProfileRead):
     ai_custom_prompt: Optional[str] = None
@@ -20,3 +25,8 @@ class ContractorProfileUpdate(SQLModel):
     bio: Optional[str] = None
     profile_image_url: Optional[str] = None
     ai_custom_prompt: Optional[str] = None
+    phone: Optional[str] = None
+    contact_email: Optional[str] = None
+    location: Optional[str] = None
+    years_experience: Optional[int] = None
+    website: Optional[str] = None

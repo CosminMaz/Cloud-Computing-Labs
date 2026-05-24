@@ -47,7 +47,7 @@ class EmailService:
                     f"Booking #{booking_id}\n"
                     f"When: {date}\n"
                     f"Notes: {notes}\n\n"
-                    "Sign in to CloudCRM to confirm or decline."
+                    "Sign in to Reparo to confirm or decline."
                 ),
                 "html": (
                     f"<p>You have a new booking request from <strong>{client_email}</strong>.</p>"
@@ -56,7 +56,7 @@ class EmailService:
                     f"<li>When: {date}</li>"
                     f"<li>Notes: {notes}</li>"
                     f"</ul>"
-                    f"<p>Sign in to CloudCRM to confirm or decline.</p>"
+                    f"<p>Sign in to Reparo to confirm or decline.</p>"
                 ),
             },
         }

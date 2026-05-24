@@ -1,16 +1,30 @@
 import { useMsal, useIsAuthenticated } from '@azure/msal-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function Navbar() {
     const { instance, accounts } = useMsal();
     const isAuthenticated = useIsAuthenticated();
     const navigate = useNavigate();
+    const { pathname } = useLocation();
     const rawName = accounts[0]?.name || '';
     const name = rawName.toLowerCase() === 'unknown' ? '' : rawName;
+
+    const isContractor = pathname.startsWith('/contractor');
+    const isClient = pathname.startsWith('/client');
 
     const handleLogout = () => {
         instance.logoutRedirect({ postLogoutRedirectUri: '/' });
     };
+
+    const navLinkStyle = (active) => ({
+        fontSize: '0.85rem',
+        fontWeight: active ? 600 : 400,
+        color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+        cursor: 'pointer',
+        padding: '4px 8px',
+        borderRadius: 'var(--radius-sm)',
+        background: active ? 'var(--bg-elevated)' : 'transparent',
+    });
 
     return (
         <nav style={{
@@ -21,12 +35,27 @@ export default function Navbar() {
             backdropFilter: 'blur(12px)',
             borderBottom: '1px solid var(--border)',
         }}>
-            <span
-                onClick={() => navigate('/')}
-                style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--text-primary)', cursor: 'pointer' }}
-            >
-                Cloud<span style={{ color: 'var(--accent)' }}>CRM</span>
-            </span>
+            <div className="flex items-center gap-4">
+                <span
+                    onClick={() => navigate('/')}
+                    style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--text-primary)', cursor: 'pointer' }}
+                >
+                    Reparo
+                </span>
+
+                {isAuthenticated && isContractor && (
+                    <>
+                        <span onClick={() => navigate('/contractor/dashboard')} style={navLinkStyle(pathname === '/contractor/dashboard')}>Dashboard</span>
+                        <span onClick={() => navigate('/contractor/profile')} style={navLinkStyle(pathname === '/contractor/profile')}>My Profile</span>
+                    </>
+                )}
+                {isAuthenticated && isClient && (
+                    <>
+                        <span onClick={() => navigate('/client/home')} style={navLinkStyle(pathname === '/client/home')}>Find Contractors</span>
+                        <span onClick={() => navigate('/client/bookings')} style={navLinkStyle(pathname === '/client/bookings')}>My Bookings</span>
+                    </>
+                )}
+            </div>
 
             {isAuthenticated && (
                 <div className="flex items-center gap-3">
