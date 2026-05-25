@@ -18,6 +18,12 @@ class ContractorProfileRead(SQLModel):
 class ContractorProfileSelf(ContractorProfileRead):
     ai_custom_prompt: Optional[str] = None
 
+class ContractorProfilePage(SQLModel):
+    items: list[ContractorProfileRead]
+    total: int
+    page: int
+    pages: int
+
 class ContractorProfileUpdate(SQLModel):
     display_name: Optional[str] = None
     skills: Optional[str] = None

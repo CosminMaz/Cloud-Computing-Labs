@@ -20,8 +20,11 @@ export const getMe = (token) =>
     api.get('/api/users/me', { headers: { Authorization: `Bearer ${token}` } });
 
 // ── Contractors ────────────────────────────────────────
-export const getContractors = (token) =>
-    api.get('/api/contractors', { headers: { Authorization: `Bearer ${token}` } });
+export const getContractors = (token, { page = 1, search = '', limit = 20 } = {}) =>
+    api.get('/api/contractors', {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { page, limit, ...(search ? { search } : {}) },
+    });
 
 export const getContractor = (token, id) =>
     api.get(`/api/contractors/${id}`, { headers: { Authorization: `Bearer ${token}` } });
@@ -49,6 +52,9 @@ export const getMyBookings = (token) =>
 
 export const updateBookingStatus = (token, bookingId, status) =>
     api.patch(`/api/bookings/${bookingId}/status`, { status }, { headers: { Authorization: `Bearer ${token}` } });
+
+export const rescheduleBooking = (token, bookingId, scheduledAt) =>
+    api.patch(`/api/bookings/${bookingId}/reschedule`, { scheduled_at: scheduledAt }, { headers: { Authorization: `Bearer ${token}` } });
 
 // ── Chat / FAQ bot ─────────────────────────────────────
 export const askChatbot = (token, { question, contractorId, history }) =>

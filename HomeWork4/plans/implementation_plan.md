@@ -134,22 +134,27 @@ These fix fundamental gaps in the current experience. Other features depend on t
 
 ### Tier 2 — Quick Wins (Low Effort, High Value)
 
-4. **More contractor profile fields**
-   - Add: `location` (city/region), `years_experience` (int), `website` (URL), `phone` (string).
+4. ✅ **More contractor profile fields**
+   - Add: `location` (city/region), `years_experience` (int), `website` (URL), `phone` (string), `contact_email`.
    - These enrich the public profile display and the AI assistant context automatically.
    - Backend: new nullable columns on `ContractorProfile`. Frontend: new inputs on the profile edit page.
 
-5. **More email notifications via Service Bus**
+5. ✅ **Contractor can reschedule a booking**
+   - `PATCH /api/bookings/{id}/reschedule` — contractor only, updates `scheduled_at` on `pending` or `confirmed` bookings.
+   - Frontend: date + time picker in the expanded row of the contractor CRM.
+   - **TODO (email):** When a contractor reschedules, publish a `booking.rescheduled` event to Service Bus → worker emails the client with the new date/time.
+
+7. **More email notifications via Service Bus**
    - Currently only fires when a booking is created (email to contractor).
    - Extend: when contractor confirms or declines, publish a new Service Bus message → worker sends email to the client.
-   - Same queue, same worker — add an `event_type` field (`booking_created` / `booking_confirmed` / `booking_cancelled`) to route the right template.
+   - Same queue, same worker — add an `event_type` field (`booking_created` / `booking_confirmed` / `booking_cancelled` / `booking_rescheduled`) to route the right template.
 
-6. **Profile completeness indicator**
+8. **Profile completeness indicator**
    - Small progress bar on the contractor profile page.
    - Counts filled optional fields (bio, skills, hourly_rate, location, ai_custom_prompt, profile picture).
    - Purely frontend, no backend changes.
 
-7. ✅ **"Copy profile link" button**
+9. ✅ **"Copy profile link" button**
    - One-click button on the contractor profile page that copies `/client/contractors/:id` to clipboard.
    - Shipped as part of Tier 1 item 1.
 
@@ -157,13 +162,19 @@ These fix fundamental gaps in the current experience. Other features depend on t
 
 ### Tier 3 — Major Features
 
-8. **WebSocket real-time chat** (`/chat/:userId`)
+8. **Server-side pagination & filtering for contractor search**
+   - Currently: all contractors fetched on load, filtered in React (fine for small datasets).
+   - Migration path: `GET /api/contractors?page=1&limit=20&search=...&skill=...` — DB-level `OFFSET/LIMIT`, returns `{ items, total, page, pages }`.
+   - Frontend: replace client-side filter with a debounced API call; add page controls or infinite scroll trigger.
+   - **No urgency until contractor count grows large.** Backend change is ~10 lines; frontend change is replacing the `filter()` calls with an `useEffect` on the query params.
+
+9. **WebSocket real-time chat** (`/chat/:userId`)
    - New `Message` DB table: `id, sender_id, receiver_id, content, created_at, is_read`.
    - Backend: in-memory `ConnectionManager`, WebSocket endpoint at `/api/ws/{user_id}` (token via query param), REST endpoint `GET /api/messages/{other_user_id}` for history.
    - Frontend: shared `/chat/:userId` page used by both roles. Chat button on each booking row (both client and contractor dashboards).
    - Note: in-memory connection manager works for single App Service instance. Can be upgraded to Azure Web PubSub if scaling is needed.
 
-9. **Calendar view on contractor dashboard**
+10. **Calendar view on contractor dashboard**
    - Install `react-big-calendar` or `@fullcalendar/react`.
    - Map bookings to calendar events, color-coded by status.
    - Click event → scrolls to booking in the table below. Hover → tooltip with client info and notes.

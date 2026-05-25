@@ -22,6 +22,7 @@ Here is the optimal, phased roadmap to build your Minimal Working Example (MVP) 
 - Full API implemented: `POST /api/users/me` (upsert), `GET /api/contractors`, `GET /api/contractors/{id}`, `PUT /api/contractors/me`, `POST /api/bookings`, `GET /api/bookings/mine`, `PATCH /api/bookings/{id}/status`
 - Centralized Axios service layer (`src/services/api.js`)
 - Complete frontend overhaul: dark-mode design system, Navbar, ContractorCard, Client search grid with live filtering, Contractor profile & booking form, Contractor dashboard with bookings table + Accept/Decline/Complete actions + profile editor
+- Expanded data models: Extended `ContractorProfile` (phone, email, location, experience, website) and `Booking` (service type, address, client phone) for a full CRM experience.
 - End-to-end booking flow tested and verified
 
 ### Phase 3 — UP NEXT

@@ -81,6 +81,8 @@ def get_my_bookings(token_payload: dict = Depends(verify_token), session: Sessio
                 entry.contractor_display_name = contractor_profile.display_name
                 entry.contractor_phone = contractor_profile.phone
                 entry.contractor_contact_email = contractor_profile.contact_email
+                entry.contractor_profile_image_url = contractor_profile.profile_image_url
+                entry.contractor_profile_id = contractor_profile.id
             elif contractor_user:
                 entry.contractor_display_name = contractor_user.email
             result.append(entry)
@@ -98,9 +100,13 @@ def get_my_bookings(token_payload: dict = Depends(verify_token), session: Sessio
         return result
 
 from pydantic import BaseModel
+from datetime import datetime
 
 class StatusPayload(BaseModel):
     status: str
+
+class ReschedulePayload(BaseModel):
+    scheduled_at: datetime
 
 @router.patch("/{booking_id}/status", response_model=BookingRead)
 def update_booking_status(booking_id: int, payload: StatusPayload, token_payload: dict = Depends(verify_token), session: Session = Depends(get_session)):
@@ -136,3 +142,31 @@ def update_booking_status(booking_id: int, payload: StatusPayload, token_payload
     session.commit()
     session.refresh(booking)
     return booking
+
+@router.patch("/{booking_id}/reschedule", response_model=BookingRead)
+def reschedule_booking(booking_id: int, payload: ReschedulePayload, token_payload: dict = Depends(verify_token), session: Session = Depends(get_session)):
+    """Allows a contractor to change the scheduled time of a pending or confirmed booking."""
+    entra_id = token_payload.get("oid") or token_payload.get("sub")
+    user = session.exec(select(User).where(User.entra_id == entra_id)).first()
+    if not user or user.role != UserRole.contractor:
+        raise HTTPException(status_code=403, detail="Only contractors can reschedule bookings")
+
+    booking = session.get(Booking, booking_id)
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    if booking.contractor_id != user.id:
+        raise HTTPException(status_code=403, detail="You can only reschedule your own bookings")
+    if booking.status not in (BookingStatus.pending, BookingStatus.confirmed):
+        raise HTTPException(status_code=409, detail="Only pending or confirmed bookings can be rescheduled")
+
+    booking.scheduled_at = payload.scheduled_at
+    session.commit()
+    session.refresh(booking)
+
+    client_user = session.get(User, booking.client_id)
+    entry = BookingRead.model_validate(booking)
+    if client_user:
+        entry.client_email = client_user.email
+        entry.client_name = client_user.display_name
+    # TODO: publish booking.rescheduled event to Service Bus to email the client
+    return entry

@@ -9,7 +9,7 @@ const GREETING = "Hi! Ask me anything about this contractor's services, rates, o
  * Chat-style UI backed by Gemini. Sends conversation history + contractor context
  * through the backend (POST /api/chat/ask) so the API key stays server-side.
  */
-export default function FaqChatbot({ title = 'FAQ Bot', subtitle, height = 420, contractorId }) {
+export default function FaqChatbot({ title = 'FAQ Bot', subtitle, height = 420, contractorId, bare = false }) {
     const { instance, accounts } = useMsal();
     const [messages, setMessages] = useState([{ role: 'bot', text: GREETING }]);
     const [input, setInput] = useState('');
@@ -49,12 +49,14 @@ export default function FaqChatbot({ title = 'FAQ Bot', subtitle, height = 420, 
         }
     };
 
-    return (
-        <div className="card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)' }}>
-                <h3>💬 {title}</h3>
-                {subtitle && <p style={{ fontSize: '0.8rem', marginTop: 4 }}>{subtitle}</p>}
-            </div>
+    const inner = (
+        <>
+            {!bare && (
+                <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)' }}>
+                    <h3>💬 {title}</h3>
+                    {subtitle && <p style={{ fontSize: '0.8rem', marginTop: 4 }}>{subtitle}</p>}
+                </div>
+            )}
 
             <div
                 ref={scrollRef}
@@ -126,6 +128,10 @@ export default function FaqChatbot({ title = 'FAQ Bot', subtitle, height = 420, 
                     Send
                 </button>
             </form>
-        </div>
+        </>
     );
+
+    return bare
+        ? <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>{inner}</div>
+        : <div className="card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>{inner}</div>;
 }

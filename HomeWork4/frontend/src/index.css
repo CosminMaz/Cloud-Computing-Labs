@@ -263,3 +263,20 @@ tr:hover td { background: var(--bg-elevated); color: var(--text-primary); }
 .markdown-body ul:last-child, .markdown-body ol:last-child { margin-bottom: 0; }
 .markdown-body li { margin-bottom: 0.3em; }
 .markdown-body strong { color: #fff; font-weight: 600; }
+
+/* ===== Contractor Profile Page Layout ===== */
+.profile-layout {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 24px;
+  align-items: start;
+}
+.profile-layout-left { display: flex; flex-direction: column; gap: 16px; }
+.profile-layout-right { position: sticky; top: 88px; }
+
+@media (max-width: 900px) {
+  .profile-layout {
+    grid-template-columns: 1fr;
+  }
+  .profile-layout-right { position: static; }
+}

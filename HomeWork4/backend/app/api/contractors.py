@@ -1,17 +1,39 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session, select
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlmodel import Session, select, func
 from app.core.database import get_session
 from app.core.auth import verify_token
 from app.models.domain import User, ContractorProfile, UserRole
-from app.schemas.contractor import ContractorProfileRead, ContractorProfileSelf, ContractorProfileUpdate
-from typing import List
+from app.schemas.contractor import ContractorProfileRead, ContractorProfileSelf, ContractorProfileUpdate, ContractorProfilePage
+from typing import List, Optional
 
 router = APIRouter(prefix="/contractors", tags=["contractors"])
 
-@router.get("", response_model=List[ContractorProfileRead])
-def list_contractors(session: Session = Depends(get_session), _token: dict = Depends(verify_token)):
-    """Returns all contractor profiles for the client search page."""
-    return session.exec(select(ContractorProfile)).all()
+@router.get("", response_model=ContractorProfilePage)
+def list_contractors(
+    page: int = Query(default=1, ge=1),
+    limit: int = Query(default=20, ge=1, le=100),
+    search: Optional[str] = Query(default=None),
+    session: Session = Depends(get_session),
+    _token: dict = Depends(verify_token),
+):
+    """Returns a paginated, searchable list of contractor profiles."""
+    query = select(ContractorProfile)
+    if search:
+        term = f"%{search}%"
+        query = query.where(
+            ContractorProfile.display_name.ilike(term) |
+            ContractorProfile.skills.ilike(term) |
+            ContractorProfile.bio.ilike(term) |
+            ContractorProfile.location.ilike(term)
+        )
+
+    count_query = select(func.count()).select_from(query.subquery())
+    total = session.exec(count_query).one()
+
+    items = session.exec(query.order_by(ContractorProfile.id).offset((page - 1) * limit).limit(limit)).all()
+    pages = max(1, (total + limit - 1) // limit)
+
+    return ContractorProfilePage(items=items, total=total, page=page, pages=pages)
 
 @router.get("/me", response_model=ContractorProfileSelf)
 def get_my_profile(token_payload: dict = Depends(verify_token), session: Session = Depends(get_session)):

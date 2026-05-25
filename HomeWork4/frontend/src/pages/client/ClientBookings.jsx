@@ -96,27 +96,44 @@ export default function ClientBookings() {
                         {bookings.map(b => (
                             <div key={b.id} className="card" style={{ padding: '20px 24px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
-                                    <div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                                            <span style={{ fontWeight: 600, fontSize: '1rem' }}>
-                                                {b.contractor_display_name || `Contractor #${b.contractor_id}`}
-                                            </span>
-                                            <span className={`badge ${STATUS_BADGE[b.status] || ''}`}>{b.status}</span>
+                                    <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+                                        {b.contractor_profile_image_url ? (
+                                            <img src={b.contractor_profile_image_url} alt={b.contractor_display_name}
+                                                style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border)', flexShrink: 0 }} />
+                                        ) : (
+                                            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--bg-elevated)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', flexShrink: 0 }}>
+                                                {(b.contractor_display_name || '?').charAt(0).toUpperCase()}
+                                            </div>
+                                        )}
+                                        <div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                                                <span style={{ fontWeight: 600, fontSize: '1rem' }}>
+                                                    {b.contractor_display_name || `Contractor #${b.contractor_id}`}
+                                                </span>
+                                                <span className={`badge ${STATUS_BADGE[b.status] || ''}`}>{b.status}</span>
+                                            </div>
+                                            <div style={{ fontWeight: 500, color: 'var(--text-primary)', marginBottom: 4 }}>
+                                                {b.service_type || 'General Service'}
+                                            </div>
+                                            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                                {getStatusLabel(b)}
+                                            </p>
                                         </div>
-                                        <div style={{ fontWeight: 500, color: 'var(--text-primary)', marginBottom: 4 }}>
-                                            {b.service_type || 'General Service'}
-                                        </div>
-                                        <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                                            {getStatusLabel(b)}
-                                        </p>
                                     </div>
-                                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                    <div style={{ textAlign: 'right', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
                                         <div style={{ fontWeight: 500, fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: 2 }}>
                                             📅 {new Date(b.scheduled_at).toLocaleDateString('en-GB', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
                                         </div>
                                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                                             {new Date(b.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </div>
+                                        <button
+                                            className="btn btn-outline"
+                                            style={{ fontSize: '0.78rem', padding: '4px 12px', borderRadius: 'var(--radius-sm)' }}
+                                            onClick={() => navigate(`/client/contractors/${b.contractor_profile_id || b.contractor_id}`)}
+                                        >
+                                            View Profile
+                                        </button>
                                     </div>
                                 </div>
 

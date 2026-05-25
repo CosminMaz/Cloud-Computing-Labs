@@ -1,7 +1,7 @@
 import { useState, useEffect, Fragment } from 'react';
 import { useMsal } from '@azure/msal-react';
 import { useNavigate } from 'react-router-dom';
-import { getMyBookings, updateBookingStatus } from '../../services/api';
+import { getMyBookings, updateBookingStatus, rescheduleBooking } from '../../services/api';
 import Navbar from '../../components/Navbar';
 
 const STATUS_BADGE = {
@@ -24,6 +24,9 @@ export default function ContractorDashboard() {
     const [expandedId, setExpandedId] = useState(null);
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
+    const [rescheduling, setRescheduling] = useState(null);
+    const [rescheduleDate, setRescheduleDate] = useState('');
+    const [rescheduleTime, setRescheduleTime] = useState('');
 
     useEffect(() => {
         const fetch = async () => {
@@ -43,6 +46,21 @@ export default function ContractorDashboard() {
             const { idToken } = await instance.acquireTokenSilent({ scopes: ['openid', 'profile', 'email'], account: accounts[0] });
             const { data } = await updateBookingStatus(idToken, bookingId, status);
             setBookings(prev => prev.map(b => b.id === bookingId ? { ...data, client_email: b.client_email, client_name: b.client_name } : b));
+        } catch (err) { console.error(err); }
+        finally { setUpdating(null); }
+    };
+
+    const handleReschedule = async (bookingId) => {
+        if (!rescheduleDate || !rescheduleTime) return;
+        setUpdating(bookingId);
+        try {
+            const { idToken } = await instance.acquireTokenSilent({ scopes: ['openid', 'profile', 'email'], account: accounts[0] });
+            const dt = new Date(`${rescheduleDate}T${rescheduleTime}:00`).toISOString();
+            const { data } = await rescheduleBooking(idToken, bookingId, dt);
+            setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, scheduled_at: data.scheduled_at } : b));
+            setRescheduling(null);
+            setRescheduleDate('');
+            setRescheduleTime('');
         } catch (err) { console.error(err); }
         finally { setUpdating(null); }
     };
@@ -212,6 +230,27 @@ export default function ContractorDashboard() {
                                                             <button className="btn btn-outline" style={{ borderRadius: 'var(--radius-sm)' }} disabled={updating === b.id} onClick={() => handleStatusUpdate(b.id, 'completed')}>
                                                                 {updating === b.id ? '…' : '✓ Mark Complete'}
                                                             </button>
+                                                        )}
+
+                                                        {(b.status === 'pending' || b.status === 'confirmed') && (
+                                                            <div style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+                                                                {rescheduling === b.id ? (
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                                                                        <input type="date" className="input" value={rescheduleDate} onChange={e => setRescheduleDate(e.target.value)} style={{ width: 160 }} />
+                                                                        <input type="time" className="input" value={rescheduleTime} onChange={e => setRescheduleTime(e.target.value)} style={{ width: 130 }} />
+                                                                        <button className="btn btn-primary" style={{ borderRadius: 'var(--radius-sm)' }} disabled={updating === b.id || !rescheduleDate || !rescheduleTime} onClick={() => handleReschedule(b.id)}>
+                                                                            {updating === b.id ? '…' : 'Confirm'}
+                                                                        </button>
+                                                                        <button className="btn btn-ghost" style={{ borderRadius: 'var(--radius-sm)' }} onClick={() => { setRescheduling(null); setRescheduleDate(''); setRescheduleTime(''); }}>
+                                                                            Cancel
+                                                                        </button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <button className="btn btn-outline" style={{ borderRadius: 'var(--radius-sm)', fontSize: '0.82rem' }} onClick={() => { setRescheduling(b.id); setRescheduleDate(''); setRescheduleTime(''); }}>
+                                                                        📅 Reschedule
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         )}
                                                     </td>
                                                 </tr>
