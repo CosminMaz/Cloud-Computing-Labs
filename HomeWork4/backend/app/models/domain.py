@@ -1,6 +1,7 @@
 from typing import Optional, List
 from datetime import datetime, timezone
 from sqlmodel import SQLModel, Field, Relationship
+from sqlalchemy import UniqueConstraint
 from enum import Enum
 
 class UserRole(str, Enum):
@@ -83,3 +84,14 @@ class Booking(SQLModel, table=True):
         back_populates="contractor_bookings",
         sa_relationship_kwargs={"foreign_keys": "[Booking.contractor_id]"}
     )
+
+class Review(SQLModel, table=True):
+    __table_args__ = (UniqueConstraint("contractor_id", "client_id", name="uq_review_contractor_client"),)
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    contractor_id: int = Field(foreign_key="user.id")
+    client_id: int = Field(foreign_key="user.id")
+    rating: int = Field(ge=1, le=5)
+    comment: Optional[str] = Field(default=None)
+    client_name: Optional[str] = Field(default=None, max_length=255)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

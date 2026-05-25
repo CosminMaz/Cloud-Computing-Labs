@@ -2,11 +2,32 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select, func
 from app.core.database import get_session
 from app.core.auth import verify_token
-from app.models.domain import User, ContractorProfile, UserRole
+from app.models.domain import User, ContractorProfile, UserRole, Review
 from app.schemas.contractor import ContractorProfileRead, ContractorProfileSelf, ContractorProfileUpdate, ContractorProfilePage
 from typing import List, Optional
 
 router = APIRouter(prefix="/contractors", tags=["contractors"])
+
+
+def _attach_stats(profiles, session: Session) -> list:
+    """Attach avg_rating and review_count to a list of ContractorProfile ORM objects."""
+    if not profiles:
+        return []
+    contractor_ids = [p.user_id for p in profiles]
+    rows = session.exec(
+        select(Review.contractor_id, func.avg(Review.rating), func.count(Review.id))
+        .where(Review.contractor_id.in_(contractor_ids))
+        .group_by(Review.contractor_id)
+    ).all()
+    stats = {row[0]: (round(float(row[1]), 1), int(row[2])) for row in rows}
+    result = []
+    for p in profiles:
+        read = ContractorProfileRead.model_validate(p)
+        avg, count = stats.get(p.user_id, (None, 0))
+        read.avg_rating = avg
+        read.review_count = count
+        result.append(read)
+    return result
 
 @router.get("", response_model=ContractorProfilePage)
 def list_contractors(
@@ -33,7 +54,7 @@ def list_contractors(
     items = session.exec(query.order_by(ContractorProfile.id).offset((page - 1) * limit).limit(limit)).all()
     pages = max(1, (total + limit - 1) // limit)
 
-    return ContractorProfilePage(items=items, total=total, page=page, pages=pages)
+    return ContractorProfilePage(items=_attach_stats(items, session), total=total, page=page, pages=pages)
 
 @router.get("/me", response_model=ContractorProfileSelf)
 def get_my_profile(token_payload: dict = Depends(verify_token), session: Session = Depends(get_session)):
@@ -53,7 +74,7 @@ def get_contractor(contractor_id: int, session: Session = Depends(get_session), 
     profile = session.get(ContractorProfile, contractor_id)
     if not profile:
         raise HTTPException(status_code=404, detail="Contractor not found")
-    return profile
+    return _attach_stats([profile], session)[0]
 
 @router.put("/me", response_model=ContractorProfileSelf)
 def update_my_profile(data: ContractorProfileUpdate, token_payload: dict = Depends(verify_token), session: Session = Depends(get_session)):

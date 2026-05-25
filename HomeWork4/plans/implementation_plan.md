@@ -162,11 +162,9 @@ These fix fundamental gaps in the current experience. Other features depend on t
 
 ### Tier 3 — Major Features
 
-8. **Server-side pagination & filtering for contractor search**
-   - Currently: all contractors fetched on load, filtered in React (fine for small datasets).
-   - Migration path: `GET /api/contractors?page=1&limit=20&search=...&skill=...` — DB-level `OFFSET/LIMIT`, returns `{ items, total, page, pages }`.
-   - Frontend: replace client-side filter with a debounced API call; add page controls or infinite scroll trigger.
-   - **No urgency until contractor count grows large.** Backend change is ~10 lines; frontend change is replacing the `filter()` calls with an `useEffect` on the query params.
+8. **Pagination for contractor search** ✅ DONE
+   - Client-side pagination implemented on the Find Contractors page.
+   - Note: server-side pagination (DB-level `OFFSET/LIMIT`) still possible if contractor count grows large, but no urgency.
 
 9. **WebSocket real-time chat** (`/chat/:userId`)
    - New `Message` DB table: `id, sender_id, receiver_id, content, created_at, is_read`.
@@ -174,20 +172,27 @@ These fix fundamental gaps in the current experience. Other features depend on t
    - Frontend: shared `/chat/:userId` page used by both roles. Chat button on each booking row (both client and contractor dashboards).
    - Note: in-memory connection manager works for single App Service instance. Can be upgraded to Azure Web PubSub if scaling is needed.
 
-10. **Calendar view on contractor dashboard**
-   - Install `react-big-calendar` or `@fullcalendar/react`.
-   - Map bookings to calendar events, color-coded by status.
-   - Click event → scrolls to booking in the table below. Hover → tooltip with client info and notes.
+10. **Calendar view on contractor dashboard** ✅ DONE
+   - Installed `react-big-calendar` + `date-fns`.
+   - Month-only view, events color-coded by status (pending/confirmed/completed).
+   - Click day → side panel with all bookings for that day; click booking → detail + action buttons.
+   - "View in table" button switches to table view and scrolls to + highlights the row.
+   - Calendar respects active status filter and search (uses `visible` array).
+   - Dark theme CSS overrides for all calendar elements including popup overlay.
+   - Event end time capped to end of day to prevent multi-day spillover.
    - No backend changes needed.
 
 ---
 
 ### Tier 4 — Nice to Have
 
-10. **Rating & review system**
-    - After a booking reaches `completed`, the client can leave a 1–5 star rating + optional comment.
-    - New `Review` DB table. Aggregate rating displayed on contractor profile cards and profile page.
-    - Medium complexity: new DB table, CRUD endpoints, UI on client bookings page + contractor profile.
+10. **Rating & review system** ✅ DONE
+    - `Review` DB table, CRUD endpoints (`POST /api/reviews`, `GET /api/reviews/contractor/{id}`, `GET /api/reviews/my-review/{id}`).
+    - Client can leave review only after a completed booking with that contractor.
+    - Reusable `Stars.jsx` and `ReviewSection.jsx` components (avg rating, distribution bars, submit form, paginated list — 5 per page with Prev/Next controls).
+    - Contractor sees their own reviews read-only on their profile page (two-column layout).
+    - Client sees reviews + can submit on contractor profile page.
+    - `seed_reviews.py` dev script for dummy data (creates fake `User` rows to satisfy FK constraints).
 
 11. **Search & filter improvements on client home**
     - Backend: `GET /contractors` accepts query params (`skill`, `min_rate`, `max_rate`, `location`).

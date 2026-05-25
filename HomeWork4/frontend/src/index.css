@@ -264,6 +264,79 @@ tr:hover td { background: var(--bg-elevated); color: var(--text-primary); }
 .markdown-body li { margin-bottom: 0.3em; }
 .markdown-body strong { color: #fff; font-weight: 600; }
 
+/* ===== react-big-calendar Dark Theme ===== */
+.rbc-dark { color: var(--text-primary); }
+.rbc-dark .rbc-calendar { background: transparent; }
+.rbc-dark .rbc-toolbar { margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+.rbc-dark .rbc-toolbar button {
+  background: var(--bg-elevated); color: var(--text-primary);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 6px 14px; font-size: 0.82rem; cursor: pointer; transition: background var(--transition);
+}
+.rbc-dark .rbc-toolbar button:hover { background: var(--bg-hover); }
+.rbc-dark .rbc-toolbar button.rbc-active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.rbc-dark .rbc-toolbar-label { font-weight: 600; font-size: 1rem; }
+.rbc-dark .rbc-month-view,
+.rbc-dark .rbc-time-view,
+.rbc-dark .rbc-agenda-view { border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
+.rbc-dark .rbc-header { background: var(--bg-elevated); border-bottom: 1px solid var(--border); padding: 8px 4px; font-size: 0.8rem; color: var(--text-muted); font-weight: 500; }
+.rbc-dark .rbc-header + .rbc-header { border-left: 1px solid var(--border); }
+.rbc-dark .rbc-month-row { border-top: 1px solid var(--border); }
+.rbc-dark .rbc-day-bg + .rbc-day-bg { border-left: 1px solid var(--border); }
+.rbc-dark .rbc-day-bg { background: var(--bg-surface); }
+.rbc-dark .rbc-day-bg.rbc-today { background: rgba(99,102,241,0.08); }
+.rbc-dark .rbc-off-range-bg { background: var(--bg-base); }
+.rbc-dark .rbc-date-cell { padding: 4px 8px; font-size: 0.78rem; color: var(--text-muted); text-align: right; }
+.rbc-dark .rbc-date-cell.rbc-now { color: var(--accent); font-weight: 600; }
+.rbc-dark .rbc-show-more { color: var(--accent); font-size: 0.75rem; background: transparent; }
+.rbc-dark .rbc-time-header { background: var(--bg-elevated); border-bottom: 1px solid var(--border); }
+.rbc-dark .rbc-time-content { border-top: 1px solid var(--border); background: var(--bg-surface); }
+.rbc-dark .rbc-time-gutter .rbc-timeslot-group { border-bottom: 1px solid var(--border); }
+.rbc-dark .rbc-timeslot-group { border-bottom: 1px solid var(--border); background: var(--bg-surface); }
+.rbc-dark .rbc-time-slot { color: var(--text-muted); font-size: 0.75rem; background: var(--bg-surface) !important; }
+.rbc-dark .rbc-day-slot { background: var(--bg-surface) !important; }
+.rbc-dark .rbc-day-slot.rbc-today { background: rgba(99,102,241,0.08) !important; }
+.rbc-dark .rbc-time-header-cell.rbc-today { background: rgba(99,102,241,0.08) !important; }
+.rbc-dark .rbc-current-time-indicator { background: var(--accent); height: 2px; }
+.rbc-dark .rbc-agenda-table { border: none; width: 100%; }
+.rbc-dark .rbc-agenda-table tbody > tr > td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 0.85rem; background: var(--bg-surface); }
+.rbc-dark .rbc-agenda-table thead > tr > th { background: var(--bg-elevated); padding: 8px 12px; color: var(--text-muted); font-size: 0.78rem; font-weight: 500; border-bottom: 1px solid var(--border); }
+.rbc-dark .rbc-agenda-date-cell, .rbc-dark .rbc-agenda-time-cell { color: var(--text-muted); white-space: nowrap; }
+.rbc-dark .rbc-agenda-event-cell { color: var(--text-primary); }
+.rbc-dark .rbc-overlay {
+  background: var(--bg-elevated) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5) !important;
+  padding: 8px !important;
+  z-index: 99 !important;
+}
+.rbc-dark .rbc-overlay-header {
+  background: var(--bg-elevated) !important;
+  color: var(--text-primary) !important;
+  border-bottom: 1px solid var(--border) !important;
+  padding: 6px 8px !important;
+  margin: -8px -8px 8px !important;
+  border-radius: var(--radius-md) var(--radius-md) 0 0 !important;
+  font-size: 0.82rem !important;
+  font-weight: 600 !important;
+}
+.rbc-overlay {
+  background: var(--bg-elevated) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5) !important;
+}
+.rbc-overlay-header {
+  background: var(--bg-elevated) !important;
+  color: var(--text-primary) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+.rbc-dark .rbc-row-segment { padding: 1px 3px; }
+.rbc-dark .rbc-row-segment .rbc-event { border-radius: 4px; margin: 0; }
+.rbc-dark .rbc-event-content { padding: 1px 4px; }
+.rbc-dark .rbc-month-view .rbc-event { font-size: 0.75rem; }
+
 /* ===== Contractor Profile Page Layout ===== */
 .profile-layout {
   display: grid;

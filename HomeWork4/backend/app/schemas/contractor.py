@@ -14,6 +14,8 @@ class ContractorProfileRead(SQLModel):
     location: Optional[str] = None
     years_experience: Optional[int] = 0
     website: Optional[str] = None
+    avg_rating: Optional[float] = None
+    review_count: int = 0
 
 class ContractorProfileSelf(ContractorProfileRead):
     ai_custom_prompt: Optional[str] = None

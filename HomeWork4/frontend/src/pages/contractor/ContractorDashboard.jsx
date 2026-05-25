@@ -1,8 +1,9 @@
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect, Fragment, useRef } from 'react';
 import { useMsal } from '@azure/msal-react';
 import { useNavigate } from 'react-router-dom';
 import { getMyBookings, updateBookingStatus, rescheduleBooking } from '../../services/api';
 import Navbar from '../../components/Navbar';
+import BookingCalendar from '../../components/BookingCalendar';
 
 const STATUS_BADGE = {
     pending:   'badge-warning',
@@ -27,6 +28,10 @@ export default function ContractorDashboard() {
     const [rescheduling, setRescheduling] = useState(null);
     const [rescheduleDate, setRescheduleDate] = useState('');
     const [rescheduleTime, setRescheduleTime] = useState('');
+    const [dashView, setDashView] = useState('table');
+    const [selectedDay, setSelectedDay] = useState(null);
+    const [selectedDayBooking, setSelectedDayBooking] = useState(null);
+    const rowRefs = useRef({});
 
     useEffect(() => {
         const fetch = async () => {
@@ -63,6 +68,32 @@ export default function ContractorDashboard() {
             setRescheduleTime('');
         } catch (err) { console.error(err); }
         finally { setUpdating(null); }
+    };
+
+    const handleSelectDay = (date, preSelected) => {
+        const dayBookings = visible.filter(b => {
+            const bd = new Date(b.scheduled_at);
+            return bd.toDateString() === date.toDateString();
+        });
+        setSelectedDay({ date, bookings: dayBookings });
+        setSelectedDayBooking(preSelected || null);
+    };
+
+    const handleViewInTable = (booking) => {
+        setSelectedDay(null);
+        setDashView('table');
+        setExpandedId(booking.id);
+        setTimeout(() => {
+            rowRefs.current[booking.id]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 80);
+    };
+
+    const [copied, setCopied] = useState(null);
+
+    const copyToClipboard = (text) => {
+        navigator.clipboard.writeText(text);
+        setCopied(text);
+        setTimeout(() => setCopied(null), 1500);
     };
 
     const stats = {
@@ -135,34 +166,102 @@ export default function ContractorDashboard() {
                 {/* Bookings */}
                 <div className="card" style={{ marginBottom: 28 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 16 }}>
-                        <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
-                            Bookings
-                            {activeTab !== 'all' && (
-                                <span className="badge" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px' }}>
-                                    {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
-                                    <button onClick={() => setActiveTab('all')} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}>✕</button>
-                                </span>
-                            )}
-                        </h3>
+                        <h3 style={{ margin: 0 }}>Bookings</h3>
                         <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                            <input
-                                className="input"
-                                placeholder="Search client or notes…"
-                                value={search}
-                                onChange={e => setSearch(e.target.value)}
-                                style={{ width: 220 }}
-                            />
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <input type="date" className="input" value={dateFrom} onChange={e => setDateFrom(e.target.value)} title="From date" />
-                                <span style={{ color: 'var(--text-muted)' }}>–</span>
-                                <input type="date" className="input" value={dateTo} onChange={e => setDateTo(e.target.value)} title="To date" />
+                            {dashView === 'table' && (<>
+                                <input
+                                    className="input"
+                                    placeholder="Search client or notes…"
+                                    value={search}
+                                    onChange={e => setSearch(e.target.value)}
+                                    style={{ width: 220 }}
+                                />
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <input type="date" className="input" value={dateFrom} onChange={e => setDateFrom(e.target.value)} title="From date" />
+                                    <span style={{ color: 'var(--text-muted)' }}>–</span>
+                                    <input type="date" className="input" value={dateTo} onChange={e => setDateTo(e.target.value)} title="To date" />
+                                </div>
+                                <button className="btn btn-outline" onClick={() => setSortAsc(v => !v)}>
+                                    {sortAsc ? '↑ Oldest' : '↓ Newest'}
+                                </button>
+                            </>)}
+                            <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
+                                <button
+                                    onClick={() => setDashView('table')}
+                                    style={{ padding: '6px 14px', fontSize: '0.82rem', border: 'none', cursor: 'pointer', background: dashView === 'table' ? 'var(--accent)' : 'var(--bg-elevated)', color: dashView === 'table' ? '#fff' : 'var(--text-muted)', transition: 'background var(--transition)' }}
+                                >☰ Table</button>
+                                <button
+                                    onClick={() => setDashView('calendar')}
+                                    style={{ padding: '6px 14px', fontSize: '0.82rem', border: 'none', cursor: 'pointer', background: dashView === 'calendar' ? 'var(--accent)' : 'var(--bg-elevated)', color: dashView === 'calendar' ? '#fff' : 'var(--text-muted)', transition: 'background var(--transition)' }}
+                                >📅 Calendar</button>
                             </div>
-                            <button className="btn btn-outline" onClick={() => setSortAsc(v => !v)}>
-                                {sortAsc ? '↑ Oldest' : '↓ Newest'}
-                            </button>
                         </div>
                     </div>
 
+                    {dashView === 'calendar' && (
+                        <div style={{ display: 'grid', gridTemplateColumns: selectedDay ? '1fr 300px' : '1fr', gap: 20, alignItems: 'start' }}>
+                            <BookingCalendar bookings={visible} onSelectDay={handleSelectDay} />
+
+                            {selectedDay && (
+                                <div style={{ background: 'var(--bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', overflow: 'hidden' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderBottom: '1px solid var(--border)' }}>
+                                        <div>
+                                            <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                                                {selectedDay.date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
+                                            </div>
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                                {selectedDay.bookings.length} booking{selectedDay.bookings.length !== 1 ? 's' : ''}
+                                            </div>
+                                        </div>
+                                        <button onClick={() => { setSelectedDay(null); setSelectedDayBooking(null); }}
+                                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '1.1rem' }}>✕</button>
+                                    </div>
+
+                                    {selectedDay.bookings.length === 0 ? (
+                                        <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>No bookings this day.</div>
+                                    ) : (
+                                        <div style={{ maxHeight: 480, overflowY: 'auto' }}>
+                                            {selectedDay.bookings.map(b => (
+                                                <div key={b.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                                                    <div
+                                                        onClick={() => setSelectedDayBooking(selectedDayBooking?.id === b.id ? null : b)}
+                                                        style={{ padding: '12px 16px', cursor: 'pointer', background: selectedDayBooking?.id === b.id ? 'var(--bg-hover)' : 'transparent', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                                                    >
+                                                        <div>
+                                                            <div style={{ fontWeight: 500, fontSize: '0.85rem' }}>{b.service_type || 'General Service'}</div>
+                                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{b.client_name || b.client_email} · {new Date(b.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                                        </div>
+                                                        <span className={`badge ${STATUS_BADGE[b.status] || ''}`}>{b.status}</span>
+                                                    </div>
+                                                    {selectedDayBooking?.id === b.id && (
+                                                        <div style={{ padding: '0 16px 14px', fontSize: '0.82rem' }}>
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 12, color: 'var(--text-muted)' }}>
+                                                                {b.client_email && <span onClick={() => copyToClipboard(b.client_email)} title="Click to copy" style={{ cursor: 'pointer', color: copied === b.client_email ? 'var(--success)' : 'var(--text-muted)' }}>📧 {copied === b.client_email ? '✓ Copied!' : b.client_email}</span>}
+                                                                {b.client_phone && <span onClick={() => copyToClipboard(b.client_phone)} title="Click to copy" style={{ cursor: 'pointer', color: copied === b.client_phone ? 'var(--success)' : 'var(--text-muted)' }}>📞 {copied === b.client_phone ? '✓ Copied!' : b.client_phone}</span>}
+                                                                {b.service_address && <span>📍 {b.service_address}</span>}
+                                                                {b.notes && <span>📝 {b.notes}</span>}
+                                                            </div>
+                                                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                                                {b.status === 'pending' && <>
+                                                                    <button className="btn btn-primary" style={{ borderRadius: 'var(--radius-sm)', fontSize: '0.78rem', padding: '4px 10px' }} disabled={updating === b.id} onClick={() => handleStatusUpdate(b.id, 'confirmed')}>{updating === b.id ? '…' : '✓ Accept'}</button>
+                                                                    <button className="btn btn-danger" style={{ borderRadius: 'var(--radius-sm)', fontSize: '0.78rem', padding: '4px 10px' }} disabled={updating === b.id} onClick={() => handleStatusUpdate(b.id, 'cancelled')}>{updating === b.id ? '…' : '✗ Decline'}</button>
+                                                                </>}
+                                                                {b.status === 'confirmed' && <button className="btn btn-outline" style={{ borderRadius: 'var(--radius-sm)', fontSize: '0.78rem', padding: '4px 10px' }} disabled={updating === b.id} onClick={() => handleStatusUpdate(b.id, 'completed')}>{updating === b.id ? '…' : '✓ Complete'}</button>}
+                                                                <button className="btn btn-ghost" style={{ borderRadius: 'var(--radius-sm)', fontSize: '0.78rem', padding: '4px 10px' }} onClick={() => handleViewInTable(b)}>↗ View in table</button>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {dashView === 'table' && (
+                    <>
                     {loading ? (
                         <div className="empty-state"><span>⏳</span></div>
                     ) : visible.length === 0 ? (
@@ -185,7 +284,8 @@ export default function ContractorDashboard() {
                                     {visible.map(b => (
                                         <Fragment key={b.id}>
                                             <tr
-                                                style={{ cursor: 'pointer' }}
+                                                ref={el => rowRefs.current[b.id] = el}
+                                                style={{ cursor: 'pointer', outline: expandedId === b.id ? '2px solid var(--accent)' : 'none' }}
                                                 onClick={() => setExpandedId(expandedId === b.id ? null : b.id)}
                                             >
                                                 <td>
@@ -212,7 +312,21 @@ export default function ContractorDashboard() {
                                                     <td colSpan={4} style={{ background: 'var(--bg-elevated)', padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
                                                         <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', fontSize: '0.85rem', marginBottom: 16 }}>
                                                             <div><span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Booking ID</span> <strong>#{b.id}</strong></div>
-                                                            <div><span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Client</span> <strong>{b.client_name || '—'}</strong> <br/><span style={{ color: 'var(--text-muted)' }}>{b.client_email}</span><br/><span style={{ color: 'var(--text-muted)' }}>{b.client_phone || 'No phone'}</span></div>
+                                                            <div><span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Client</span>
+                                                                <strong>{b.client_name || '—'}</strong><br/>
+                                                                {b.client_email && (
+                                                                    <span onClick={() => copyToClipboard(b.client_email)} title="Click to copy"
+                                                                        style={{ cursor: 'pointer', color: copied === b.client_email ? 'var(--success)' : 'var(--text-muted)' }}>
+                                                                        {copied === b.client_email ? '✓ Copied!' : b.client_email}
+                                                                    </span>
+                                                                )}<br/>
+                                                                {b.client_phone && b.client_phone !== 'No phone' ? (
+                                                                    <span onClick={() => copyToClipboard(b.client_phone)} title="Click to copy"
+                                                                        style={{ cursor: 'pointer', color: copied === b.client_phone ? 'var(--success)' : 'var(--text-muted)' }}>
+                                                                        {copied === b.client_phone ? '✓ Copied!' : b.client_phone}
+                                                                    </span>
+                                                                ) : <span style={{ color: 'var(--text-muted)' }}>No phone</span>}
+                                                            </div>
                                                             <div><span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Created</span> <strong>{new Date(b.created_at).toLocaleString()}</strong></div>
                                                             {b.notes && <div style={{ maxWidth: 400 }}><span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Notes</span> {b.notes}</div>}
                                                         </div>
@@ -260,6 +374,8 @@ export default function ContractorDashboard() {
                                 </tbody>
                             </table>
                         </div>
+                    )}
+                    </>
                     )}
                 </div>
             </div>

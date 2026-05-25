@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMsal } from '@azure/msal-react';
-import { getContractor, createBooking } from '../../services/api';
+import { getContractor, createBooking, getContractorReviews, submitReview, getMyReview, getMyBookings } from '../../services/api';
 import Navbar from '../../components/Navbar';
 import FaqChatbot from '../../components/FaqChatbot';
+import Stars from '../../components/Stars';
+import ReviewSection from '../../components/ReviewSection';
 
 export default function ContractorProfile() {
     const { id } = useParams();
@@ -20,6 +22,10 @@ export default function ContractorProfile() {
     const [booking, setBooking] = useState(null);
     const [submitting, setSubmitting] = useState(false);
     const [chatOpen, setChatOpen] = useState(false);
+    const [reviewStats, setReviewStats] = useState(null);
+    const [myReview, setMyReview] = useState(null);
+    const [submittingReview, setSubmittingReview] = useState(false);
+    const [canReview, setCanReview] = useState(false);
 
     useEffect(() => {
         const fetch = async () => {
@@ -27,11 +33,36 @@ export default function ContractorProfile() {
                 const { idToken } = await instance.acquireTokenSilent({ scopes: ['openid', 'profile', 'email'], account: accounts[0] });
                 const { data } = await getContractor(idToken, id);
                 setContractor(data);
+                const [reviewsRes] = await Promise.all([
+                    getContractorReviews(idToken, data.user_id),
+                ]);
+                setReviewStats(reviewsRes.data);
+                const bookingsRes = await getMyBookings(idToken);
+                const hasCompleted = bookingsRes.data.some(
+                    b => b.contractor_id === data.user_id && b.status === 'completed'
+                );
+                setCanReview(hasCompleted);
+                try {
+                    const myR = await getMyReview(idToken, data.user_id);
+                    setMyReview(myR.data);
+                } catch { /* 404 = not reviewed yet, fine */ }
             } catch (err) { console.error(err); }
             finally { setLoading(false); }
         };
         fetch();
     }, [id, instance, accounts]);
+
+    const handleSubmitReview = async ({ rating, comment }) => {
+        setSubmittingReview(true);
+        try {
+            const { idToken } = await instance.acquireTokenSilent({ scopes: ['openid', 'profile', 'email'], account: accounts[0] });
+            const { data } = await submitReview(idToken, { contractor_id: contractor.user_id, rating, comment });
+            setMyReview(data);
+            const refreshed = await getContractorReviews(idToken, contractor.user_id);
+            setReviewStats(refreshed.data);
+        } catch (err) { console.error(err); }
+        finally { setSubmittingReview(false); }
+    };
 
     const handleBook = async (e) => {
         e.preventDefault();
@@ -81,10 +112,17 @@ export default function ContractorProfile() {
                                 )}
                                 <div>
                                     <h2 style={{ marginBottom: 6 }}>{contractor.display_name}</h2>
-                                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                                         <span className="badge badge-accent">{contractor.hourly_rate} RON/hr</span>
                                         {contractor.location && <span className="badge" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>📍 {contractor.location}</span>}
                                         {contractor.years_experience > 0 && <span className="badge" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>⏱ {contractor.years_experience} yrs exp</span>}
+                                        {reviewStats?.review_count > 0 && (
+                                            <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.88rem' }}>
+                                                <Stars value={Math.round(reviewStats.avg_rating)} size="0.95rem" />
+                                                <strong>{reviewStats.avg_rating}</strong>
+                                                <span style={{ color: 'var(--text-muted)' }}>({reviewStats.review_count})</span>
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -147,6 +185,13 @@ export default function ContractorProfile() {
                                 </div>
                             )}
                         </div>
+                        <ReviewSection
+                            reviewStats={reviewStats}
+                            myReview={myReview}
+                            canReview={canReview}
+                            onSubmit={handleSubmitReview}
+                            submitting={submittingReview}
+                        />
                     </div>
 
                     {/* ── Right column: booking form ── */}
@@ -180,7 +225,7 @@ export default function ContractorProfile() {
 
                                     <div className="form-group">
                                         <label className="label">Your Phone Number</label>
-                                        <input className="input" type="tel" placeholder="+40 700 000 000" required value={clientPhone} onChange={e => setClientPhone(e.target.value)} />
+                                        <input className="input" type="tel" placeholder="+40 700 000 000" required value={clientPhone} onChange={e => setClientPhone(e.target.value.replace(/[^0-9+\-() ]/g, ''))} />
                                     </div>
 
                                     <div className="form-group">

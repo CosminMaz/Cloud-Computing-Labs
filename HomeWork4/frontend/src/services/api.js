@@ -56,6 +56,16 @@ export const updateBookingStatus = (token, bookingId, status) =>
 export const rescheduleBooking = (token, bookingId, scheduledAt) =>
     api.patch(`/api/bookings/${bookingId}/reschedule`, { scheduled_at: scheduledAt }, { headers: { Authorization: `Bearer ${token}` } });
 
+// ── Reviews ────────────────────────────────────────────
+export const getContractorReviews = (token, contractorUserId) =>
+    api.get(`/api/reviews/contractor/${contractorUserId}`, { headers: { Authorization: `Bearer ${token}` } });
+
+export const submitReview = (token, data) =>
+    api.post('/api/reviews', data, { headers: { Authorization: `Bearer ${token}` } });
+
+export const getMyReview = (token, contractorUserId) =>
+    api.get(`/api/reviews/my-review/${contractorUserId}`, { headers: { Authorization: `Bearer ${token}` } });
+
 // ── Chat / FAQ bot ─────────────────────────────────────
 export const askChatbot = (token, { question, contractorId, history }) =>
     api.post('/api/chat/ask', { question, contractor_id: contractorId, history }, {

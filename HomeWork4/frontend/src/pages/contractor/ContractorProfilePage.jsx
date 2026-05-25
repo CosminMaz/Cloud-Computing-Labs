@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useMsal } from '@azure/msal-react';
 import { useNavigate } from 'react-router-dom';
-import { getMyProfile, updateMyProfile, uploadProfilePicture } from '../../services/api';
+import { getMyProfile, updateMyProfile, uploadProfilePicture, getContractorReviews } from '../../services/api';
 import Navbar from '../../components/Navbar';
+import ReviewSection from '../../components/ReviewSection';
 
 export default function ContractorProfilePage() {
     const { instance, accounts } = useMsal();
@@ -17,6 +18,7 @@ export default function ContractorProfilePage() {
     const [uploading, setUploading] = useState(false);
     const [uploadError, setUploadError] = useState(null);
     const [copied, setCopied] = useState(false);
+    const [reviewStats, setReviewStats] = useState(null);
     const fileInputRef = useRef(null);
 
     useEffect(() => {
@@ -25,6 +27,10 @@ export default function ContractorProfilePage() {
                 const { idToken } = await instance.acquireTokenSilent({ scopes: ['openid', 'profile', 'email'], account: accounts[0] });
                 const { data } = await getMyProfile(idToken);
                 setProfile(data);
+                try {
+                    const { data: reviews } = await getContractorReviews(idToken, data.user_id);
+                    setReviewStats(reviews);
+                } catch { /* no reviews yet */ }
                 setForm({
                     display_name: data.display_name || '',
                     skills: data.skills || '',
@@ -129,7 +135,7 @@ export default function ContractorProfilePage() {
     return (
         <>
             <Navbar />
-            <div className="page" style={{ maxWidth: 720 }}>
+            <div className="page" style={{ maxWidth: 1100 }}>
                 <button className="btn btn-ghost" onClick={() => navigate('/contractor/dashboard')} style={{ marginBottom: 24 }}>
                     ← Back to Dashboard
                 </button>
@@ -234,6 +240,8 @@ export default function ContractorProfilePage() {
                     </div>
                 ) : (
                     /* ── View Mode ─────────────────────────────────── */
+                    <div className="profile-layout">
+                    <div className="profile-layout-left">
                     <div className="card">
                         <div className="flex items-center gap-4" style={{ marginBottom: 24 }}>
                             {profile?.profile_image_url ? (
@@ -307,6 +315,17 @@ export default function ContractorProfilePage() {
                             </button>
                         </div>
                         {saved && <span style={{ color: 'var(--success)', fontSize: '0.85rem', marginTop: 8, display: 'block' }}>✓ Profile saved!</span>}
+                    </div>
+                    </div>
+                    <div className="profile-layout-right">
+                    <ReviewSection
+                        reviewStats={reviewStats}
+                        myReview={null}
+                        canReview={false}
+                        onSubmit={() => {}}
+                        submitting={false}
+                    />
+                    </div>
                     </div>
                 )}
             </div>
