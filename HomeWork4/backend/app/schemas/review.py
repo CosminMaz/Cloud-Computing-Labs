@@ -9,6 +9,11 @@ class ReviewCreate(SQLModel):
     comment: Optional[str] = None
 
 
+class ReviewUpdate(SQLModel):
+    rating: int
+    comment: Optional[str] = None
+
+
 class ReviewRead(SQLModel):
     id: int
     contractor_id: int

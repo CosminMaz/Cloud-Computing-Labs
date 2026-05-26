@@ -3,16 +3,33 @@ import Stars from './Stars';
 
 const PAGE_SIZE = 5;
 
-export default function ReviewSection({ reviewStats, myReview, canReview, onSubmit, submitting }) {
+export default function ReviewSection({ reviewStats, myReview, canReview, onSubmit, onEdit, submitting }) {
     const [rating, setRating] = useState(0);
     const [hover, setHover] = useState(0);
     const [comment, setComment] = useState('');
     const [page, setPage] = useState(1);
+    const [editing, setEditing] = useState(false);
+    const [editRating, setEditRating] = useState(0);
+    const [editHover, setEditHover] = useState(0);
+    const [editComment, setEditComment] = useState('');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!rating) return;
         await onSubmit({ rating, comment: comment || null });
+    };
+
+    const startEdit = () => {
+        setEditRating(myReview.rating);
+        setEditComment(myReview.comment || '');
+        setEditing(true);
+    };
+
+    const handleEditSubmit = async (e) => {
+        e.preventDefault();
+        if (!editRating) return;
+        await onEdit({ rating: editRating, comment: editComment || null });
+        setEditing(false);
     };
 
     return (
@@ -53,9 +70,48 @@ export default function ReviewSection({ reviewStats, myReview, canReview, onSubm
             {/* Submit / existing review */}
             {myReview ? (
                 <div style={{ marginBottom: 20, padding: '12px 16px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-md)', fontSize: '0.85rem' }}>
-                    <Stars value={myReview.rating} size="1rem" />
-                    <strong style={{ marginLeft: 6 }}>Your review</strong>
-                    {myReview.comment && <p style={{ margin: '6px 0 0', color: 'var(--text-secondary)' }}>{myReview.comment}</p>}
+                    {editing ? (
+                        <form onSubmit={handleEditSubmit}>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 10 }}>Edit your review</div>
+                            <Stars
+                                value={editRating}
+                                interactive
+                                hover={editHover}
+                                size="1.6rem"
+                                onHover={setEditHover}
+                                onLeave={() => setEditHover(0)}
+                                onClick={setEditRating}
+                            />
+                            <textarea
+                                className="textarea"
+                                placeholder="Share your experience (optional)…"
+                                value={editComment}
+                                onChange={e => setEditComment(e.target.value)}
+                                style={{ marginTop: 10, marginBottom: 10 }}
+                            />
+                            <div style={{ display: 'flex', gap: 8 }}>
+                                <button className="btn btn-primary" type="submit" disabled={!editRating || submitting} style={{ borderRadius: 'var(--radius-sm)', fontSize: '0.85rem' }}>
+                                    {submitting ? 'Saving…' : 'Save'}
+                                </button>
+                                <button className="btn btn-ghost" type="button" onClick={() => setEditing(false)} style={{ borderRadius: 'var(--radius-sm)', fontSize: '0.85rem' }}>
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    ) : (
+                        <>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                    <Stars value={myReview.rating} size="1rem" />
+                                    <strong style={{ marginLeft: 6 }}>Your review</strong>
+                                </div>
+                                <button className="btn btn-ghost" onClick={startEdit} style={{ borderRadius: 'var(--radius-sm)', fontSize: '0.78rem', padding: '3px 10px' }}>
+                                    Edit
+                                </button>
+                            </div>
+                            {myReview.comment && <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)' }}>{myReview.comment}</p>}
+                        </>
+                    )}
                 </div>
             ) : canReview ? (
                 <form onSubmit={handleSubmit} style={{ marginBottom: 20, padding: '16px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-md)' }}>

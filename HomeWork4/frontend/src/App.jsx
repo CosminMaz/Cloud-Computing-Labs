@@ -63,9 +63,9 @@ function LandingPage() {
                 textAlign: 'center',
             }}>
                 <div style={{
-                    fontSize: '3rem', fontWeight: 800, letterSpacing: '-0.03em',
-                    background: 'linear-gradient(135deg, #f0f2f8 0%, #6366f1 100%)',
-                    WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: '4rem', fontWeight: 900, letterSpacing: '0.01em',
+                    color: '#e8541a',
                 }}>
                     Reparo
                 </div>

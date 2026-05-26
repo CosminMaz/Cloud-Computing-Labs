@@ -108,6 +108,22 @@ class StatusPayload(BaseModel):
 class ReschedulePayload(BaseModel):
     scheduled_at: datetime
 
+@router.get("/completed-with/{contractor_id}")
+def has_completed_booking_with(contractor_id: int, token_payload: dict = Depends(verify_token), session: Session = Depends(get_session)):
+    entra_id = token_payload.get("oid") or token_payload.get("sub")
+    client = session.exec(select(User).where(User.entra_id == entra_id)).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="User not registered")
+    match = session.exec(
+        select(Booking).where(
+            Booking.client_id == client.id,
+            Booking.contractor_id == contractor_id,
+            Booking.status == BookingStatus.completed,
+        )
+    ).first()
+    return {"has_completed": match is not None}
+
+
 @router.patch("/{booking_id}/status", response_model=BookingRead)
 def update_booking_status(booking_id: int, payload: StatusPayload, token_payload: dict = Depends(verify_token), session: Session = Depends(get_session)):
     """Allows a contractor to confirm or cancel a booking assigned to them."""

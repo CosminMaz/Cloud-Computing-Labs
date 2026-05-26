@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMsal } from '@azure/msal-react';
-import { getContractor, createBooking, getContractorReviews, submitReview, getMyReview, getMyBookings } from '../../services/api';
+import { getContractor, createBooking, getContractorReviews, submitReview, updateReview, getMyReview, hasCompletedBookingWith } from '../../services/api';
 import Navbar from '../../components/Navbar';
 import FaqChatbot from '../../components/FaqChatbot';
 import Stars from '../../components/Stars';
@@ -38,10 +38,9 @@ export default function ContractorProfile() {
                     getContractorReviews(idToken, data.user_id),
                 ]);
                 setReviewStats(reviewsRes.data);
-                const bookingsRes = await getMyBookings(idToken);
-                const myBookings = bookingsRes.data.filter(b => b.contractor_id === data.user_id);
-                setHasBooking(myBookings.length > 0);
-                setCanReview(myBookings.some(b => b.status === 'completed'));
+                const { data: completedData } = await hasCompletedBookingWith(idToken, data.user_id);
+                setHasBooking(completedData.has_completed);
+                setCanReview(completedData.has_completed);
                 try {
                     const myR = await getMyReview(idToken, data.user_id);
                     setMyReview(myR.data);
@@ -57,6 +56,18 @@ export default function ContractorProfile() {
         try {
             const { idToken } = await instance.acquireTokenSilent({ scopes: ['openid', 'profile', 'email'], account: accounts[0] });
             const { data } = await submitReview(idToken, { contractor_id: contractor.user_id, rating, comment });
+            setMyReview(data);
+            const refreshed = await getContractorReviews(idToken, contractor.user_id);
+            setReviewStats(refreshed.data);
+        } catch (err) { console.error(err); }
+        finally { setSubmittingReview(false); }
+    };
+
+    const handleEditReview = async ({ rating, comment }) => {
+        setSubmittingReview(true);
+        try {
+            const { idToken } = await instance.acquireTokenSilent({ scopes: ['openid', 'profile', 'email'], account: accounts[0] });
+            const { data } = await updateReview(idToken, myReview.id, { rating, comment });
             setMyReview(data);
             const refreshed = await getContractorReviews(idToken, contractor.user_id);
             setReviewStats(refreshed.data);
@@ -202,6 +213,7 @@ export default function ContractorProfile() {
                             myReview={myReview}
                             canReview={canReview}
                             onSubmit={handleSubmitReview}
+                            onEdit={handleEditReview}
                             submitting={submittingReview}
                         />
                     </div>

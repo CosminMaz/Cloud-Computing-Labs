@@ -38,7 +38,7 @@ export default function Navbar() {
             <div className="flex items-center gap-4">
                 <span
                     onClick={() => navigate('/')}
-                    style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--text-primary)', cursor: 'pointer' }}
+                    style={{ fontFamily: "'Playfair Display', serif", fontWeight: 900, fontSize: '1.3rem', color: '#e8541a', cursor: 'pointer' }}
                 >
                     Reparo
                 </span>

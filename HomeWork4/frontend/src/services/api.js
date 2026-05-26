@@ -50,6 +50,9 @@ export const createBooking = (token, data) =>
 export const getMyBookings = (token) =>
     api.get('/api/bookings/mine', { headers: { Authorization: `Bearer ${token}` } });
 
+export const hasCompletedBookingWith = (token, contractorUserId) =>
+    api.get(`/api/bookings/completed-with/${contractorUserId}`, { headers: { Authorization: `Bearer ${token}` } });
+
 export const updateBookingStatus = (token, bookingId, status) =>
     api.patch(`/api/bookings/${bookingId}/status`, { status }, { headers: { Authorization: `Bearer ${token}` } });
 
@@ -65,6 +68,9 @@ export const submitReview = (token, data) =>
 
 export const getMyReview = (token, contractorUserId) =>
     api.get(`/api/reviews/my-review/${contractorUserId}`, { headers: { Authorization: `Bearer ${token}` } });
+
+export const updateReview = (token, reviewId, data) =>
+    api.patch(`/api/reviews/${reviewId}`, data, { headers: { Authorization: `Bearer ${token}` } });
 
 // ── Direct Messages ────────────────────────────────────
 export const getConversations = (token) =>

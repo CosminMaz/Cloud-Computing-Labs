@@ -3,7 +3,7 @@ from sqlmodel import Session, select, func
 from app.core.database import get_session
 from app.core.auth import verify_token
 from app.models.domain import User, Review, Booking, UserRole, BookingStatus
-from app.schemas.review import ReviewCreate, ReviewRead, ReviewStats
+from app.schemas.review import ReviewCreate, ReviewRead, ReviewStats, ReviewUpdate
 
 router = APIRouter(prefix="/reviews", tags=["reviews"])
 
@@ -81,6 +81,35 @@ def get_contractor_reviews(
         distribution=distribution,
         reviews=reviews,
     )
+
+
+@router.patch("/{review_id}", response_model=ReviewRead)
+def update_review(
+    review_id: int,
+    data: ReviewUpdate,
+    token_payload: dict = Depends(verify_token),
+    session: Session = Depends(get_session),
+):
+    """Client updates their own existing review."""
+    entra_id = token_payload.get("oid") or token_payload.get("sub")
+    client = session.exec(select(User).where(User.entra_id == entra_id)).first()
+    if not client or client.role != UserRole.client:
+        raise HTTPException(status_code=403, detail="Only clients can edit reviews")
+
+    if not 1 <= data.rating <= 5:
+        raise HTTPException(status_code=422, detail="Rating must be between 1 and 5")
+
+    review = session.get(Review, review_id)
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    if review.client_id != client.id:
+        raise HTTPException(status_code=403, detail="You can only edit your own reviews")
+
+    review.rating = data.rating
+    review.comment = data.comment
+    session.commit()
+    session.refresh(review)
+    return review
 
 
 @router.get("/my-review/{contractor_id}", response_model=ReviewRead)
