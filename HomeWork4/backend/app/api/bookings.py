@@ -3,14 +3,28 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from app.core.database import get_session
 from app.core.auth import verify_token
-from app.models.domain import User, Booking, ContractorProfile, UserRole, BookingStatus
+from app.models.domain import User, Booking, ContractorProfile, UserRole, BookingStatus, Payment, PaymentStatus
 from app.schemas.booking import BookingCreate, BookingRead
+from app.schemas.payment import PaymentRead
 from app.services.service_bus import ServiceBusPublisher, get_service_bus_publisher
 from typing import List
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
+
+
+def _attach_payments(entries: list[BookingRead], session: Session) -> None:
+    """Mutates BookingRead entries in-place, attaching their Payment if one exists."""
+    ids = [e.id for e in entries]
+    if not ids:
+        return
+    payments = session.exec(select(Payment).where(Payment.booking_id.in_(ids))).all()
+    pay_map = {p.booking_id: p for p in payments}
+    for entry in entries:
+        p = pay_map.get(entry.id)
+        if p:
+            entry.payment = PaymentRead.model_validate(p)
 
 @router.post("", response_model=BookingRead)
 def create_booking(
@@ -86,6 +100,7 @@ def get_my_bookings(token_payload: dict = Depends(verify_token), session: Sessio
             elif contractor_user:
                 entry.contractor_display_name = contractor_user.email
             result.append(entry)
+        _attach_payments(result, session)
         return result
     else:
         bookings = session.exec(select(Booking).where(Booking.contractor_id == user.id)).all()
@@ -97,6 +112,7 @@ def get_my_bookings(token_payload: dict = Depends(verify_token), session: Sessio
                 entry.client_email = client_user.email
                 entry.client_name = client_user.display_name
             result.append(entry)
+        _attach_payments(result, session)
         return result
 
 from pydantic import BaseModel
@@ -146,6 +162,8 @@ def update_booking_status(booking_id: int, payload: StatusPayload, token_payload
     else:
         if booking.contractor_id != user.id:
             raise HTTPException(status_code=403, detail="You can only update your own bookings")
+        if payload.status == BookingStatus.confirmed.value:
+            raise HTTPException(status_code=403, detail="Bookings are confirmed via the payment flow")
 
     try:
         booking.status = BookingStatus(payload.status)
@@ -154,6 +172,9 @@ def update_booking_status(booking_id: int, payload: StatusPayload, token_payload
 
     if booking.status == BookingStatus.cancelled:
         booking.cancelled_by = user.role.value
+        payment = session.exec(select(Payment).where(Payment.booking_id == booking.id)).first()
+        if payment and payment.status in (PaymentStatus.quoted, PaymentStatus.in_escrow, PaymentStatus.pending_revision):
+            payment.status = PaymentStatus.refunded
 
     session.commit()
     session.refresh(booking)

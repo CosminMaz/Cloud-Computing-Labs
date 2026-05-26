@@ -1,7 +1,8 @@
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from datetime import datetime
 from sqlmodel import SQLModel
 from app.models.domain import BookingStatus
+from app.schemas.payment import PaymentRead
 
 class BookingCreate(SQLModel):
     contractor_id: int
@@ -30,3 +31,4 @@ class BookingRead(SQLModel):
     cancelled_by: Optional[str] = None
     client_email: Optional[str] = None
     client_name: Optional[str] = None
+    payment: Optional[PaymentRead] = None

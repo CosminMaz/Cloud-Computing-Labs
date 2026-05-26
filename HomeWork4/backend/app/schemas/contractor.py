@@ -19,6 +19,7 @@ class ContractorProfileRead(SQLModel):
 
 class ContractorProfileSelf(ContractorProfileRead):
     ai_custom_prompt: Optional[str] = None
+    balance: float = 0.0
 
 class ContractorProfilePage(SQLModel):
     items: list[ContractorProfileRead]

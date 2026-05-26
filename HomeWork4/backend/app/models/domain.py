@@ -40,21 +40,23 @@ class User(SQLModel, table=True):
 class ContractorProfile(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id", unique=True)
-    
+
     display_name: str
     skills: Optional[str] = Field(default=None)
     hourly_rate: float = Field(default=0.0)
     bio: Optional[str] = Field(default=None)
     profile_image_url: Optional[str] = Field(default=None)
     ai_custom_prompt: Optional[str] = Field(default=None)
-    
+
     # New Tier 2 fields
     phone: Optional[str] = Field(default=None, max_length=50)
     contact_email: Optional[str] = Field(default=None, max_length=255)
     location: Optional[str] = Field(default=None, max_length=255)
     years_experience: Optional[int] = Field(default=0)
     website: Optional[str] = Field(default=None, max_length=255)
-    
+
+    balance: float = Field(default=0.0)
+
     # Relationship
     user: User = Relationship(back_populates="profile")
 
@@ -92,6 +94,33 @@ class Message(SQLModel, table=True):
     content: str = Field(max_length=4000)
     is_read: bool = Field(default=False)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class PaymentStatus(str, Enum):
+    quoted = "quoted"
+    in_escrow = "in_escrow"
+    pending_revision = "pending_revision"
+    released = "released"
+    refunded = "refunded"
+
+
+class Payment(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    booking_id: int = Field(foreign_key="booking.id", unique=True)
+
+    quoted_amount: float
+    final_amount: float
+    revised_amount: Optional[float] = Field(default=None)
+
+    platform_fee_pct: float
+    platform_fee: Optional[float] = Field(default=None)
+    contractor_payout: Optional[float] = Field(default=None)
+
+    status: PaymentStatus = Field(default=PaymentStatus.quoted)
+
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    paid_at: Optional[datetime] = Field(default=None)
+    released_at: Optional[datetime] = Field(default=None)
+
 
 class Review(SQLModel, table=True):
     __table_args__ = (UniqueConstraint("contractor_id", "client_id", name="uq_review_contractor_client"),)

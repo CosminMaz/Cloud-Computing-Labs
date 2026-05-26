@@ -16,5 +16,6 @@ class Settings:
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
     ENTRA_CLIENT_SECRET = os.getenv("ENTRA_CLIENT_SECRET", "")
     ENTRA_BACKEND_CLIENT_ID = os.getenv("ENTRA_BACKEND_CLIENT_ID", "")
+    PLATFORM_FEE_PCT: float = 0.10
 
 settings = Settings()

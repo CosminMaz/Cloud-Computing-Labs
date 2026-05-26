@@ -1,7 +1,7 @@
 import { useMsal, useIsAuthenticated } from '@azure/msal-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
-export default function Navbar() {
+export default function Navbar({ balance = null }) {
     const { instance, accounts } = useMsal();
     const isAuthenticated = useIsAuthenticated();
     const navigate = useNavigate();
@@ -63,6 +63,11 @@ export default function Navbar() {
                         {name.charAt(0).toUpperCase()}
                     </div>
                     <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{name}</span>
+                    {balance !== null && (
+                        <span style={{ fontSize: '0.8rem', color: 'var(--success)', fontWeight: 600 }}>
+                            {balance.toFixed(2)} RON
+                        </span>
+                    )}
                     <button className="btn btn-ghost" style={{ fontSize: '0.8rem' }} onClick={handleLogout}>
                         Log out
                     </button>

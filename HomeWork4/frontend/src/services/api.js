@@ -82,6 +82,22 @@ export const getMessageHistory = (token, otherUserId) =>
 export const markMessagesRead = (token, otherUserId) =>
     api.post(`/api/messages/${otherUserId}/read`, {}, { headers: { Authorization: `Bearer ${token}` } });
 
+// ── Payments ───────────────────────────────────────────
+export const setPaymentQuote = (token, bookingId, amount) =>
+    api.post('/api/payments/quote', { booking_id: bookingId, amount }, { headers: { Authorization: `Bearer ${token}` } });
+
+export const payBooking = (token, bookingId) =>
+    api.post(`/api/payments/${bookingId}/pay`, {}, { headers: { Authorization: `Bearer ${token}` } });
+
+export const revisePayment = (token, bookingId, newAmount) =>
+    api.patch(`/api/payments/${bookingId}/revise`, { new_amount: newAmount }, { headers: { Authorization: `Bearer ${token}` } });
+
+export const approveRevision = (token, bookingId) =>
+    api.post(`/api/payments/${bookingId}/approve-revision`, {}, { headers: { Authorization: `Bearer ${token}` } });
+
+export const releasePayment = (token, bookingId) =>
+    api.post(`/api/payments/${bookingId}/release`, {}, { headers: { Authorization: `Bearer ${token}` } });
+
 // ── Chat / FAQ bot ─────────────────────────────────────
 export const askChatbot = (token, { question, contractorId, history }) =>
     api.post('/api/chat/ask', { question, contractor_id: contractorId, history }, {

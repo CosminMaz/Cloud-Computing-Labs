@@ -1,12 +1,13 @@
 import { useState, useEffect, Fragment, useRef, useMemo } from 'react';
 import { useMsal } from '@azure/msal-react';
 import { useNavigate } from 'react-router-dom';
-import { getMyBookings, updateBookingStatus, rescheduleBooking, getMe, getConversations } from '../../services/api';
+import { getMyBookings, updateBookingStatus, rescheduleBooking, getMe, getConversations, getMyProfile, setPaymentQuote, revisePayment } from '../../services/api';
 import Navbar from '../../components/Navbar';
 import BookingCalendar from '../../components/BookingCalendar';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const WS_BASE = BASE_URL.startsWith('https') ? BASE_URL.replace('https://', 'wss://') : BASE_URL.replace('http://', 'ws://');
+const PLATFORM_FEE = 0.10;
 
 const STATUS_BADGE = {
     pending:   'badge-warning',
@@ -38,6 +39,11 @@ export default function ContractorDashboard() {
     const [myId, setMyId] = useState(null);
     const [conversations, setConversations] = useState([]);
     const dashWsRef = useRef(null);
+    const [balance, setBalance] = useState(null);
+    const [quoteAmounts, setQuoteAmounts] = useState({});
+    const [quoting, setQuoting] = useState(null);
+    const [revising, setRevising] = useState(null);
+    const [reviseAmounts, setReviseAmounts] = useState({});
 
     const unreadMap = useMemo(() =>
         Object.fromEntries(conversations.filter(c => c.unread_count > 0).map(c => [c.user_id, c.unread_count])),
@@ -49,8 +55,9 @@ export default function ContractorDashboard() {
         const fetch = async () => {
             try {
                 const { idToken } = await instance.acquireTokenSilent({ scopes: ['openid', 'profile', 'email'], account: accounts[0] });
-                const { data } = await getMyBookings(idToken);
-                setBookings(data);
+                const [bookingsRes, profileRes] = await Promise.all([getMyBookings(idToken), getMyProfile(idToken)]);
+                setBookings(bookingsRes.data);
+                setBalance(profileRes.data.balance ?? 0);
             } catch (err) { console.error(err); }
             finally { setLoading(false); }
         };
@@ -97,6 +104,30 @@ export default function ContractorDashboard() {
             setBookings(prev => prev.map(b => b.id === bookingId ? { ...data, client_email: b.client_email, client_name: b.client_name } : b));
         } catch (err) { console.error(err); }
         finally { setUpdating(null); }
+    };
+
+    const handleSendQuote = async (bookingId) => {
+        const amount = parseFloat(quoteAmounts[bookingId]);
+        if (!amount || amount <= 0) return;
+        setQuoting(bookingId);
+        try {
+            const { idToken } = await instance.acquireTokenSilent({ scopes: ['openid', 'profile', 'email'], account: accounts[0] });
+            const { data: payment } = await setPaymentQuote(idToken, bookingId, amount);
+            setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, payment } : b));
+        } catch (err) { console.error(err); }
+        finally { setQuoting(null); }
+    };
+
+    const handleSendRevision = async (bookingId) => {
+        const amount = parseFloat(reviseAmounts[bookingId]);
+        if (!amount || amount <= 0) return;
+        setRevising(bookingId);
+        try {
+            const { idToken } = await instance.acquireTokenSilent({ scopes: ['openid', 'profile', 'email'], account: accounts[0] });
+            const { data: payment } = await revisePayment(idToken, bookingId, amount);
+            setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, payment } : b));
+        } catch (err) { console.error(err); }
+        finally { setRevising(null); }
     };
 
     const handleReschedule = async (bookingId) => {
@@ -171,7 +202,7 @@ export default function ContractorDashboard() {
 
     return (
         <>
-            <Navbar />
+            <Navbar balance={balance} />
             <div className="page">
                 <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
@@ -349,13 +380,14 @@ export default function ContractorDashboard() {
                                                                 {b.notes && <span>📝 {b.notes}</span>}
                                                             </div>
                                                             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                                                                {b.status === 'pending' && <>
-                                                                    <button className="btn btn-primary" style={{ borderRadius: 'var(--radius-sm)', fontSize: '0.78rem', padding: '4px 10px' }} disabled={updating === b.id} onClick={() => handleStatusUpdate(b.id, 'confirmed')}>{updating === b.id ? '…' : '✓ Accept'}</button>
-                                                                    <button className="btn btn-danger" style={{ borderRadius: 'var(--radius-sm)', fontSize: '0.78rem', padding: '4px 10px' }} disabled={updating === b.id} onClick={() => handleStatusUpdate(b.id, 'cancelled')}>{updating === b.id ? '…' : '✗ Decline'}</button>
-                                                                </>}
-                                                                {b.status === 'confirmed' && <button className="btn btn-outline" style={{ borderRadius: 'var(--radius-sm)', fontSize: '0.78rem', padding: '4px 10px' }} disabled={updating === b.id} onClick={() => handleStatusUpdate(b.id, 'completed')}>{updating === b.id ? '…' : '✓ Complete'}</button>}
+                                                                {b.status === 'pending' && (
+                                                                    <button className="btn btn-ghost" style={{ borderRadius: 'var(--radius-sm)', fontSize: '0.78rem', padding: '4px 10px' }} onClick={() => handleViewInTable(b)}>↗ Set Quote in table</button>
+                                                                )}
+                                                                {b.status === 'confirmed' && b.payment?.status === 'in_escrow' && (
+                                                                    <button className="btn btn-outline" style={{ borderRadius: 'var(--radius-sm)', fontSize: '0.78rem', padding: '4px 10px' }} disabled={updating === b.id} onClick={() => handleStatusUpdate(b.id, 'completed')}>{updating === b.id ? '…' : '✓ Complete'}</button>
+                                                                )}
                                                                 <button className="btn btn-ghost" style={{ borderRadius: 'var(--radius-sm)', fontSize: '0.78rem', padding: '4px 10px' }} onClick={() => handleViewInTable(b)}>↗ View in table</button>
-                                                <button className="btn btn-ghost" style={{ borderRadius: 'var(--radius-sm)', fontSize: '0.78rem', padding: '4px 10px' }} onClick={() => navigate(`/chat/${b.client_id}`, { state: { name: b.client_name || b.client_email } })}>💬 Chat</button>
+                                                                <button className="btn btn-ghost" style={{ borderRadius: 'var(--radius-sm)', fontSize: '0.78rem', padding: '4px 10px' }} onClick={() => navigate(`/chat/${b.client_id}`, { state: { name: b.client_name || b.client_email } })}>💬 Chat</button>
                                                             </div>
                                                         </div>
                                                     )}
@@ -445,20 +477,93 @@ export default function ContractorDashboard() {
                                                             <div><span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Created</span> <strong>{new Date(b.created_at).toLocaleString()}</strong></div>
                                                             {b.notes && <div style={{ maxWidth: 400 }}><span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Notes</span> {b.notes}</div>}
                                                         </div>
-                                                        {b.status === 'pending' && (
-                                                            <div className="flex gap-3">
-                                                                <button className="btn btn-primary" style={{ borderRadius: 'var(--radius-sm)' }} disabled={updating === b.id} onClick={() => handleStatusUpdate(b.id, 'confirmed')}>
-                                                                    {updating === b.id ? '…' : '✓ Accept'}
-                                                                </button>
-                                                                <button className="btn btn-danger" style={{ borderRadius: 'var(--radius-sm)' }} disabled={updating === b.id} onClick={() => handleStatusUpdate(b.id, 'cancelled')}>
-                                                                    {updating === b.id ? '…' : '✗ Decline'}
-                                                                </button>
+                                                        {b.status === 'pending' && (() => {
+                                                            const amt = parseFloat(quoteAmounts[b.id]) || 0;
+                                                            const fee = amt * PLATFORM_FEE;
+                                                            const payout = amt - fee;
+                                                            const hasQuote = b.payment?.status === 'quoted';
+                                                            return (
+                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 2 }}>
+                                                                        {hasQuote ? `Quote sent: ${b.payment.quoted_amount.toFixed(2)} RON — awaiting client payment` : 'Set a price to confirm this booking'}
+                                                                    </div>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                                                        <input
+                                                                            type="number" min="1" step="1" className="input"
+                                                                            placeholder={hasQuote ? `${b.payment.quoted_amount}` : 'Amount (RON)'}
+                                                                            value={quoteAmounts[b.id] || ''}
+                                                                            onChange={e => setQuoteAmounts(prev => ({ ...prev, [b.id]: e.target.value }))}
+                                                                            style={{ width: 140 }}
+                                                                        />
+                                                                        <button className="btn btn-primary" style={{ borderRadius: 'var(--radius-sm)' }}
+                                                                            disabled={quoting === b.id || !quoteAmounts[b.id]}
+                                                                            onClick={() => handleSendQuote(b.id)}>
+                                                                            {quoting === b.id ? '…' : hasQuote ? 'Update Quote' : 'Send Quote'}
+                                                                        </button>
+                                                                        <button className="btn btn-danger" style={{ borderRadius: 'var(--radius-sm)' }}
+                                                                            disabled={updating === b.id} onClick={() => handleStatusUpdate(b.id, 'cancelled')}>
+                                                                            {updating === b.id ? '…' : '✗ Decline'}
+                                                                        </button>
+                                                                    </div>
+                                                                    {amt > 0 && (
+                                                                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', gap: 16 }}>
+                                                                            <span>Client pays: <strong style={{ color: 'var(--text-primary)' }}>{amt.toFixed(2)} RON</strong></span>
+                                                                            <span>Platform fee ({(PLATFORM_FEE * 100).toFixed(0)}%): <strong style={{ color: 'var(--warning)' }}>{fee.toFixed(2)} RON</strong></span>
+                                                                            <span>You receive: <strong style={{ color: 'var(--success)' }}>{payout.toFixed(2)} RON</strong></span>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })()}
+                                                        {b.status === 'confirmed' && b.payment?.status === 'pending_revision' && (
+                                                            <div style={{ fontSize: '0.82rem', color: 'var(--warning)' }}>
+                                                                Revision of {b.payment.revised_amount?.toFixed(2)} RON pending client approval
                                                             </div>
                                                         )}
-                                                        {b.status === 'confirmed' && (
-                                                            <button className="btn btn-outline" style={{ borderRadius: 'var(--radius-sm)' }} disabled={updating === b.id} onClick={() => handleStatusUpdate(b.id, 'completed')}>
-                                                                {updating === b.id ? '…' : '✓ Mark Complete'}
-                                                            </button>
+                                                        {b.status === 'confirmed' && b.payment?.status === 'in_escrow' && (() => {
+                                                            const amt = parseFloat(reviseAmounts[b.id]) || 0;
+                                                            const fee = amt * PLATFORM_FEE;
+                                                            const payout = amt - fee;
+                                                            return (
+                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                                                    <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                                                                        {b.payment.final_amount.toFixed(2)} RON secured in escrow
+                                                                    </div>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                                                        <button className="btn btn-outline" style={{ borderRadius: 'var(--radius-sm)' }}
+                                                                            disabled={updating === b.id} onClick={() => handleStatusUpdate(b.id, 'completed')}>
+                                                                            {updating === b.id ? '…' : '✓ Mark Complete'}
+                                                                        </button>
+                                                                        <input type="number" min="1" step="1" className="input"
+                                                                            placeholder="Revised amount (RON)"
+                                                                            value={reviseAmounts[b.id] || ''}
+                                                                            onChange={e => setReviseAmounts(prev => ({ ...prev, [b.id]: e.target.value }))}
+                                                                            style={{ width: 180 }} />
+                                                                        <button className="btn btn-ghost" style={{ borderRadius: 'var(--radius-sm)', fontSize: '0.82rem' }}
+                                                                            disabled={revising === b.id || !reviseAmounts[b.id]}
+                                                                            onClick={() => handleSendRevision(b.id)}>
+                                                                            {revising === b.id ? '…' : 'Request Revision'}
+                                                                        </button>
+                                                                    </div>
+                                                                    {amt > 0 && (
+                                                                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', gap: 16 }}>
+                                                                            <span>Client pays: <strong style={{ color: 'var(--text-primary)' }}>{amt.toFixed(2)} RON</strong></span>
+                                                                            <span>Platform fee: <strong style={{ color: 'var(--warning)' }}>{fee.toFixed(2)} RON</strong></span>
+                                                                            <span>You receive: <strong style={{ color: 'var(--success)' }}>{payout.toFixed(2)} RON</strong></span>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })()}
+                                                        {b.status === 'completed' && b.payment?.status === 'in_escrow' && (
+                                                            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                                                                Awaiting client to release {b.payment.final_amount.toFixed(2)} RON
+                                                            </div>
+                                                        )}
+                                                        {b.status === 'completed' && b.payment?.status === 'released' && (
+                                                            <div style={{ fontSize: '0.82rem', color: 'var(--success)' }}>
+                                                                ✓ Payment released — you received {b.payment.contractor_payout?.toFixed(2)} RON
+                                                            </div>
                                                         )}
                                                         <div style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                                                             <button

@@ -148,6 +148,7 @@ These fix fundamental gaps in the current experience. Other features depend on t
    - Currently only fires when a booking is created (email to contractor).
    - Extend: when contractor confirms or declines, publish a new Service Bus message → worker sends email to the client.
    - Same queue, same worker — add an `event_type` field (`booking_created` / `booking_confirmed` / `booking_cancelled` / `booking_rescheduled`) to route the right template.
+   - **TODO (payment events):** Also notify on `payment.quoted` (contractor sent a quote), `payment.revised` (contractor revised price), `payment.released` (client released funds to contractor). Same queue/worker pattern.
 
 8. **Profile completeness indicator**
    - Small progress bar on the contractor profile page.
@@ -186,7 +187,7 @@ These fix fundamental gaps in the current experience. Other features depend on t
 
 ### Tier 4 — Nice to Have
 
-10. **Rating & review system** ✅ DONE
+10. **Rating & review system** ✅ DONE — client can also **edit** their review after submitting.
     - `Review` DB table, CRUD endpoints (`POST /api/reviews`, `GET /api/reviews/contractor/{id}`, `GET /api/reviews/my-review/{id}`).
     - Client can leave review only after a completed booking with that contractor.
     - Reusable `Stars.jsx` and `ReviewSection.jsx` components (avg rating, distribution bars, submit form, paginated list — 5 per page with Prev/Next controls).
@@ -194,7 +195,19 @@ These fix fundamental gaps in the current experience. Other features depend on t
     - Client sees reviews + can submit on contractor profile page.
     - `seed_reviews.py` dev script for dummy data (creates fake `User` rows to satisfy FK constraints).
 
-11. **Search & filter improvements on client home**
+12. ✅ **Mock payment flow**
+    - `Payment` DB table: `quoted_amount`, `final_amount`, `revised_amount`, `platform_fee_pct`, `platform_fee`, `contractor_payout`, `status`, timestamps.
+    - `PaymentStatus` enum: `quoted → in_escrow → released` (happy path); `pending_revision` for price revision; `refunded` on cancellation.
+    - `balance` field on `ContractorProfile` — accumulates `contractor_payout` on each release.
+    - Booking auto-confirms when client pays (no separate Accept button). Contractor must set a quote to proceed.
+    - Contractor can revise price after seeing the job; client approves the revision.
+    - Client releases escrowed funds after contractor marks complete.
+    - Platform fee (10%, configurable in `config.py`) shown live in the UI when contractor sets a quote: client pays / platform fee / you receive.
+    - Contractor balance card on dashboard.
+    - Cancellation at any stage auto-refunds any in-flight payment.
+    - **TODO (auto-release timeout):** Future work — auto-release after N days if client doesn't act, to protect contractor from ghosting.
+
+13. **Search & filter improvements on client home**
     - Backend: `GET /contractors` accepts query params (`skill`, `min_rate`, `max_rate`, `location`).
     - Frontend: filter panel on `ClientHome` with dropdowns/sliders.
     - Foundation already exists (search by name/skill is already implemented).
