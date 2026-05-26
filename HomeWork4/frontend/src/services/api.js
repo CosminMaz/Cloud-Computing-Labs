@@ -59,6 +59,9 @@ export const updateBookingStatus = (token, bookingId, status) =>
 export const rescheduleBooking = (token, bookingId, scheduledAt) =>
     api.patch(`/api/bookings/${bookingId}/reschedule`, { scheduled_at: scheduledAt }, { headers: { Authorization: `Bearer ${token}` } });
 
+export const updateContractorNotes = (token, bookingId, notes) =>
+    api.patch(`/api/bookings/${bookingId}/notes`, { contractor_notes: notes || null }, { headers: { Authorization: `Bearer ${token}` } });
+
 // ── Reviews ────────────────────────────────────────────
 export const getContractorReviews = (token, contractorUserId) =>
     api.get(`/api/reviews/contractor/${contractorUserId}`, { headers: { Authorization: `Bearer ${token}` } });

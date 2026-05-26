@@ -74,6 +74,7 @@ class Booking(SQLModel, table=True):
     client_phone: Optional[str] = Field(default=None, max_length=50)
     
     notes: Optional[str] = Field(default=None)
+    contractor_notes: Optional[str] = Field(default=None)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     cancelled_by: Optional[str] = Field(default=None)
 

@@ -28,6 +28,7 @@ class BookingRead(SQLModel):
     contractor_contact_email: Optional[str] = None
     contractor_profile_image_url: Optional[str] = None
     contractor_profile_id: Optional[int] = None
+    contractor_notes: Optional[str] = None
     cancelled_by: Optional[str] = None
     client_email: Optional[str] = None
     client_name: Optional[str] = None

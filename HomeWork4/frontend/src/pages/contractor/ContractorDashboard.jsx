@@ -1,7 +1,7 @@
 import { useState, useEffect, Fragment, useRef, useMemo } from 'react';
 import { useMsal } from '@azure/msal-react';
 import { useNavigate } from 'react-router-dom';
-import { getMyBookings, updateBookingStatus, rescheduleBooking, getMe, getConversations, getMyProfile, setPaymentQuote, revisePayment } from '../../services/api';
+import { getMyBookings, updateBookingStatus, rescheduleBooking, getMe, getConversations, getMyProfile, setPaymentQuote, revisePayment, updateContractorNotes } from '../../services/api';
 import Navbar from '../../components/Navbar';
 import BookingCalendar from '../../components/BookingCalendar';
 
@@ -40,6 +40,9 @@ export default function ContractorDashboard() {
     const [conversations, setConversations] = useState([]);
     const dashWsRef = useRef(null);
     const [balance, setBalance] = useState(null);
+    const [contractorNotes, setContractorNotes] = useState({});
+    const [savingNotes, setSavingNotes] = useState(null);
+    const [noteModal, setNoteModal] = useState(null);
     const [quoteAmounts, setQuoteAmounts] = useState({});
     const [quoting, setQuoting] = useState(null);
     const [revising, setRevising] = useState(null);
@@ -58,6 +61,7 @@ export default function ContractorDashboard() {
                 const [bookingsRes, profileRes] = await Promise.all([getMyBookings(idToken), getMyProfile(idToken)]);
                 setBookings(bookingsRes.data);
                 setBalance(profileRes.data.balance ?? 0);
+                setContractorNotes(Object.fromEntries(bookingsRes.data.map(b => [b.id, b.contractor_notes || ''])));
             } catch (err) { console.error(err); }
             finally { setLoading(false); }
         };
@@ -104,6 +108,15 @@ export default function ContractorDashboard() {
             setBookings(prev => prev.map(b => b.id === bookingId ? { ...data, client_email: b.client_email, client_name: b.client_name } : b));
         } catch (err) { console.error(err); }
         finally { setUpdating(null); }
+    };
+
+    const handleSaveNotes = async (bookingId) => {
+        setSavingNotes(bookingId);
+        try {
+            const { idToken } = await instance.acquireTokenSilent({ scopes: ['openid', 'profile', 'email'], account: accounts[0] });
+            await updateContractorNotes(idToken, bookingId, contractorNotes[bookingId]);
+        } catch (err) { console.error(err); }
+        finally { setSavingNotes(null); }
     };
 
     const handleSendQuote = async (bookingId) => {
@@ -565,6 +578,18 @@ export default function ContractorDashboard() {
                                                                 ✓ Payment released — you received {b.payment.contractor_payout?.toFixed(2)} RON
                                                             </div>
                                                         )}
+                                                        <div style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                                                            <div style={{ fontSize: '0.8rem', minWidth: 0 }}>
+                                                                <span style={{ color: 'var(--text-muted)', marginRight: 8 }}>Notes:</span>
+                                                                <span style={{ color: contractorNotes[b.id] ? 'var(--text-secondary)' : 'var(--text-muted)', fontStyle: contractorNotes[b.id] ? 'normal' : 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                                    {contractorNotes[b.id] || 'No notes yet'}
+                                                                </span>
+                                                            </div>
+                                                            <button className="btn btn-ghost" style={{ borderRadius: 'var(--radius-sm)', fontSize: '0.78rem', flexShrink: 0 }}
+                                                                onClick={() => setNoteModal(b.id)}>
+                                                                {contractorNotes[b.id] ? 'Edit' : '+ Add'}
+                                                            </button>
+                                                        </div>
                                                         <div style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                                                             <button
                                                                 className="btn btn-ghost"
@@ -606,6 +631,36 @@ export default function ContractorDashboard() {
                     )}
                 </div>
             </div>
+
+            {/* Notes modal */}
+            {noteModal !== null && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+                    onClick={() => setNoteModal(null)}>
+                    <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', width: '100%', maxWidth: 560, padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}
+                        onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h3 style={{ margin: 0, fontSize: '0.95rem' }}>Private Notes — Booking #{noteModal}</h3>
+                            <button className="btn btn-ghost" style={{ fontSize: '0.85rem', padding: '4px 10px' }} onClick={() => setNoteModal(null)}>✕</button>
+                        </div>
+                        <textarea
+                            className="textarea"
+                            placeholder="Internal notes visible only to you…"
+                            value={contractorNotes[noteModal] ?? ''}
+                            onChange={e => setContractorNotes(prev => ({ ...prev, [noteModal]: e.target.value }))}
+                            style={{ minHeight: 180, fontSize: '0.88rem', resize: 'vertical' }}
+                            autoFocus
+                        />
+                        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                            <button className="btn btn-ghost" style={{ borderRadius: 'var(--radius-sm)' }} onClick={() => setNoteModal(null)}>Cancel</button>
+                            <button className="btn btn-primary" style={{ borderRadius: 'var(--radius-sm)' }}
+                                disabled={savingNotes === noteModal}
+                                onClick={async () => { await handleSaveNotes(noteModal); setNoteModal(null); }}>
+                                {savingNotes === noteModal ? 'Saving…' : 'Save'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

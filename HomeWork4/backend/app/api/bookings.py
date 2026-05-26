@@ -117,12 +117,16 @@ def get_my_bookings(token_payload: dict = Depends(verify_token), session: Sessio
 
 from pydantic import BaseModel
 from datetime import datetime
+from typing import Optional
 
 class StatusPayload(BaseModel):
     status: str
 
 class ReschedulePayload(BaseModel):
     scheduled_at: datetime
+
+class NotesPayload(BaseModel):
+    contractor_notes: Optional[str]
 
 @router.get("/completed-with/{contractor_id}")
 def has_completed_booking_with(contractor_id: int, token_payload: dict = Depends(verify_token), session: Session = Depends(get_session)):
@@ -138,6 +142,21 @@ def has_completed_booking_with(contractor_id: int, token_payload: dict = Depends
         )
     ).first()
     return {"has_completed": match is not None}
+
+
+@router.patch("/{booking_id}/notes", response_model=BookingRead)
+def update_contractor_notes(booking_id: int, payload: NotesPayload, token_payload: dict = Depends(verify_token), session: Session = Depends(get_session)):
+    entra_id = token_payload.get("oid") or token_payload.get("sub")
+    user = session.exec(select(User).where(User.entra_id == entra_id)).first()
+    if not user or user.role != UserRole.contractor:
+        raise HTTPException(status_code=403, detail="Only contractors can edit booking notes")
+    booking = session.get(Booking, booking_id)
+    if not booking or booking.contractor_id != user.id:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    booking.contractor_notes = payload.contractor_notes
+    session.commit()
+    session.refresh(booking)
+    return booking
 
 
 @router.patch("/{booking_id}/status", response_model=BookingRead)
