@@ -1,9 +1,12 @@
-import { useState, useEffect, Fragment, useRef } from 'react';
+import { useState, useEffect, Fragment, useRef, useMemo } from 'react';
 import { useMsal } from '@azure/msal-react';
 import { useNavigate } from 'react-router-dom';
-import { getMyBookings, updateBookingStatus, rescheduleBooking } from '../../services/api';
+import { getMyBookings, updateBookingStatus, rescheduleBooking, getMe, getConversations } from '../../services/api';
 import Navbar from '../../components/Navbar';
 import BookingCalendar from '../../components/BookingCalendar';
+
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const WS_BASE = BASE_URL.startsWith('https') ? BASE_URL.replace('https://', 'wss://') : BASE_URL.replace('http://', 'ws://');
 
 const STATUS_BADGE = {
     pending:   'badge-warning',
@@ -32,6 +35,15 @@ export default function ContractorDashboard() {
     const [selectedDay, setSelectedDay] = useState(null);
     const [selectedDayBooking, setSelectedDayBooking] = useState(null);
     const rowRefs = useRef({});
+    const [myId, setMyId] = useState(null);
+    const [conversations, setConversations] = useState([]);
+    const dashWsRef = useRef(null);
+
+    const unreadMap = useMemo(() =>
+        Object.fromEntries(conversations.filter(c => c.unread_count > 0).map(c => [c.user_id, c.unread_count])),
+        [conversations]
+    );
+    const totalUnread = useMemo(() => conversations.reduce((sum, c) => sum + c.unread_count, 0), [conversations]);
 
     useEffect(() => {
         const fetch = async () => {
@@ -43,6 +55,38 @@ export default function ContractorDashboard() {
             finally { setLoading(false); }
         };
         fetch();
+    }, [instance, accounts]);
+
+    useEffect(() => {
+        let ws;
+        const initMessaging = async () => {
+            try {
+                const { idToken } = await instance.acquireTokenSilent({ scopes: ['openid', 'profile', 'email'], account: accounts[0] });
+                const [meRes, convRes] = await Promise.all([getMe(idToken), getConversations(idToken)]);
+                setMyId(meRes.data.id);
+                setConversations(convRes.data);
+
+                ws = new WebSocket(`${WS_BASE}/api/ws/${meRes.data.id}?token=${encodeURIComponent(idToken)}`);
+                dashWsRef.current = ws;
+                ws.onmessage = (e) => {
+                    const msg = JSON.parse(e.data);
+                    if (msg.from_id === meRes.data.id) return;
+                    setConversations(prev => {
+                        const exists = prev.find(c => c.user_id === msg.from_id);
+                        if (exists) {
+                            return [...prev.map(c => c.user_id === msg.from_id
+                                ? { ...c, unread_count: c.unread_count + 1, last_message: msg.content, last_message_at: msg.created_at, is_mine: false }
+                                : c
+                            )].sort((a, b) => new Date(b.last_message_at) - new Date(a.last_message_at));
+                        }
+                        getConversations(idToken).then(r => setConversations(r.data));
+                        return prev;
+                    });
+                };
+            } catch (err) { console.error(err); }
+        };
+        initMessaging();
+        return () => { ws?.close(); };
     }, [instance, accounts]);
 
     const handleStatusUpdate = async (bookingId, status) => {
@@ -137,6 +181,69 @@ export default function ContractorDashboard() {
                     <button className="btn btn-outline" onClick={() => navigate('/contractor/profile')}>
                         My Profile
                     </button>
+                </div>
+
+                {/* Messages */}
+                <div className="card" style={{ marginBottom: 28 }}>
+                    <h3 style={{ margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                        Messages
+                        {totalUnread > 0 && (
+                            <span style={{ background: 'var(--accent)', color: '#fff', borderRadius: '999px', padding: '2px 8px', fontSize: '0.7rem', fontWeight: 700 }}>
+                                {totalUnread}
+                            </span>
+                        )}
+                    </h3>
+                    {conversations.length === 0 ? (
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>No messages yet.</p>
+                    ) : (
+                        <div>
+                            {conversations.map((c, i) => (
+                                <div
+                                    key={c.user_id}
+                                    onClick={() => {
+                                        setConversations(prev => prev.map(x => x.user_id === c.user_id ? { ...x, unread_count: 0 } : x));
+                                        navigate(`/chat/${c.user_id}`, { state: { name: c.display_name } });
+                                    }}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: 12,
+                                        padding: '10px 8px', cursor: 'pointer',
+                                        borderBottom: i < conversations.length - 1 ? '1px solid var(--border)' : 'none',
+                                        borderRadius: 'var(--radius-sm)',
+                                        background: 'transparent',
+                                        transition: 'background 0.15s',
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+                                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                >
+                                    <div style={{
+                                        width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+                                        background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        fontWeight: 600, fontSize: '0.88rem',
+                                        color: c.unread_count > 0 ? 'var(--accent)' : 'var(--text-muted)',
+                                    }}>
+                                        {(c.display_name || '?').charAt(0).toUpperCase()}
+                                    </div>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ fontWeight: c.unread_count > 0 ? 600 : 400, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                            {c.display_name || `User #${c.user_id}`}
+                                            {c.unread_count > 0 && (
+                                                <span style={{ background: 'var(--accent)', color: '#fff', borderRadius: '999px', padding: '1px 6px', fontSize: '0.65rem', fontWeight: 700 }}>
+                                                    {c.unread_count}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                            {c.is_mine ? 'You: ' : ''}{c.last_message}
+                                        </div>
+                                    </div>
+                                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', flexShrink: 0 }}>
+                                        {new Date(c.last_message_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* Stats — click to filter */}
@@ -248,6 +355,7 @@ export default function ContractorDashboard() {
                                                                 </>}
                                                                 {b.status === 'confirmed' && <button className="btn btn-outline" style={{ borderRadius: 'var(--radius-sm)', fontSize: '0.78rem', padding: '4px 10px' }} disabled={updating === b.id} onClick={() => handleStatusUpdate(b.id, 'completed')}>{updating === b.id ? '…' : '✓ Complete'}</button>}
                                                                 <button className="btn btn-ghost" style={{ borderRadius: 'var(--radius-sm)', fontSize: '0.78rem', padding: '4px 10px' }} onClick={() => handleViewInTable(b)}>↗ View in table</button>
+                                                <button className="btn btn-ghost" style={{ borderRadius: 'var(--radius-sm)', fontSize: '0.78rem', padding: '4px 10px' }} onClick={() => navigate(`/chat/${b.client_id}`, { state: { name: b.client_name || b.client_email } })}>💬 Chat</button>
                                                             </div>
                                                         </div>
                                                     )}
@@ -289,7 +397,14 @@ export default function ContractorDashboard() {
                                                 onClick={() => setExpandedId(expandedId === b.id ? null : b.id)}
                                             >
                                                 <td>
-                                                    <div style={{ fontWeight: 500 }}>{b.client_name || '—'}</div>
+                                                    <div style={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                        {b.client_name || '—'}
+                                                        {unreadMap[b.client_id] > 0 && (
+                                                            <span style={{ background: 'var(--accent)', color: '#fff', borderRadius: '999px', padding: '1px 6px', fontSize: '0.62rem', fontWeight: 700 }}>
+                                                                {unreadMap[b.client_id]}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                     <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{b.client_email || ''}</div>
                                                 </td>
                                                 <td>
@@ -345,10 +460,16 @@ export default function ContractorDashboard() {
                                                                 {updating === b.id ? '…' : '✓ Mark Complete'}
                                                             </button>
                                                         )}
-
-                                                        {(b.status === 'pending' || b.status === 'confirmed') && (
-                                                            <div style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-                                                                {rescheduling === b.id ? (
+                                                        <div style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                                                            <button
+                                                                className="btn btn-ghost"
+                                                                style={{ borderRadius: 'var(--radius-sm)', fontSize: '0.82rem' }}
+                                                                onClick={() => navigate(`/chat/${b.client_id}`, { state: { name: b.client_name || b.client_email } })}
+                                                            >
+                                                                💬 Message {b.client_name ? b.client_name.split(' ')[0] : 'Client'}
+                                                            </button>
+                                                            {(b.status === 'pending' || b.status === 'confirmed') && (
+                                                                <>{rescheduling === b.id ? (
                                                                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                                                                         <input type="date" className="input" value={rescheduleDate} onChange={e => setRescheduleDate(e.target.value)} style={{ width: 160 }} />
                                                                         <input type="time" className="input" value={rescheduleTime} onChange={e => setRescheduleTime(e.target.value)} style={{ width: 130 }} />
@@ -364,8 +485,9 @@ export default function ContractorDashboard() {
                                                                         📅 Reschedule
                                                                     </button>
                                                                 )}
-                                                            </div>
-                                                        )}
+                                                                </>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             )}

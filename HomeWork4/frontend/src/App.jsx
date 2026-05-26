@@ -13,6 +13,7 @@ import ContractorProfile from './pages/client/ContractorProfile';
 import ClientBookings from './pages/client/ClientBookings';
 import ContractorDashboard from './pages/contractor/ContractorDashboard';
 import ContractorProfilePage from './pages/contractor/ContractorProfilePage';
+import ChatPage from './pages/ChatPage';
 
 function LandingPage() {
     const { instance, accounts } = useMsal();
@@ -99,6 +100,9 @@ function App() {
                 {/* Contractor Routes */}
                 <Route path="/contractor/dashboard" element={<ProtectedRoute><ContractorDashboard /></ProtectedRoute>} />
                 <Route path="/contractor/profile" element={<ProtectedRoute><ContractorProfilePage /></ProtectedRoute>} />
+
+                {/* Shared */}
+                <Route path="/chat/:userId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
             </Routes>
         </BrowserRouter>
     );

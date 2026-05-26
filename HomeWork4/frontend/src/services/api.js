@@ -66,6 +66,16 @@ export const submitReview = (token, data) =>
 export const getMyReview = (token, contractorUserId) =>
     api.get(`/api/reviews/my-review/${contractorUserId}`, { headers: { Authorization: `Bearer ${token}` } });
 
+// ── Direct Messages ────────────────────────────────────
+export const getConversations = (token) =>
+    api.get('/api/messages/conversations', { headers: { Authorization: `Bearer ${token}` } });
+
+export const getMessageHistory = (token, otherUserId) =>
+    api.get(`/api/messages/${otherUserId}`, { headers: { Authorization: `Bearer ${token}` } });
+
+export const markMessagesRead = (token, otherUserId) =>
+    api.post(`/api/messages/${otherUserId}/read`, {}, { headers: { Authorization: `Bearer ${token}` } });
+
 // ── Chat / FAQ bot ─────────────────────────────────────
 export const askChatbot = (token, { question, contractorId, history }) =>
     api.post('/api/chat/ask', { question, contractor_id: contractorId, history }, {

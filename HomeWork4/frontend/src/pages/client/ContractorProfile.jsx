@@ -26,6 +26,7 @@ export default function ContractorProfile() {
     const [myReview, setMyReview] = useState(null);
     const [submittingReview, setSubmittingReview] = useState(false);
     const [canReview, setCanReview] = useState(false);
+    const [hasBooking, setHasBooking] = useState(false);
 
     useEffect(() => {
         const fetch = async () => {
@@ -38,10 +39,9 @@ export default function ContractorProfile() {
                 ]);
                 setReviewStats(reviewsRes.data);
                 const bookingsRes = await getMyBookings(idToken);
-                const hasCompleted = bookingsRes.data.some(
-                    b => b.contractor_id === data.user_id && b.status === 'completed'
-                );
-                setCanReview(hasCompleted);
+                const myBookings = bookingsRes.data.filter(b => b.contractor_id === data.user_id);
+                setHasBooking(myBookings.length > 0);
+                setCanReview(myBookings.some(b => b.status === 'completed'));
                 try {
                     const myR = await getMyReview(idToken, data.user_id);
                     setMyReview(myR.data);
@@ -132,6 +132,18 @@ export default function ContractorProfile() {
                             {skills.length > 0 && (
                                 <div className="flex gap-2" style={{ flexWrap: 'wrap' }}>
                                     {skills.map(s => <span key={s} className="badge badge-accent">{s}</span>)}
+                                </div>
+                            )}
+
+                            {hasBooking && (
+                                <div style={{ marginTop: 16 }}>
+                                    <button
+                                        className="btn btn-ghost"
+                                        style={{ fontSize: '0.85rem', padding: '6px 16px', borderRadius: 'var(--radius-sm)' }}
+                                        onClick={() => navigate(`/chat/${contractor.user_id}`, { state: { name: contractor.display_name, avatar: contractor.profile_image_url } })}
+                                    >
+                                        💬 Message {contractor.display_name.split(' ')[0]}
+                                    </button>
                                 </div>
                             )}
                         </div>

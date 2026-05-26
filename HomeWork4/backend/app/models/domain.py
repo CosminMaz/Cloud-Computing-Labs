@@ -85,6 +85,14 @@ class Booking(SQLModel, table=True):
         sa_relationship_kwargs={"foreign_keys": "[Booking.contractor_id]"}
     )
 
+class Message(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    sender_id: int = Field(foreign_key="user.id")
+    receiver_id: int = Field(foreign_key="user.id")
+    content: str = Field(max_length=4000)
+    is_read: bool = Field(default=False)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 class Review(SQLModel, table=True):
     __table_args__ = (UniqueConstraint("contractor_id", "client_id", name="uq_review_contractor_client"),)
 

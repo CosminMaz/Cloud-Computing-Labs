@@ -134,6 +134,13 @@ export default function ClientBookings() {
                                         >
                                             View Profile
                                         </button>
+                                        <button
+                                            className="btn btn-ghost"
+                                            style={{ fontSize: '0.78rem', padding: '4px 12px', borderRadius: 'var(--radius-sm)' }}
+                                            onClick={() => navigate(`/chat/${b.contractor_id}`, { state: { name: b.contractor_display_name, avatar: b.contractor_profile_image_url } })}
+                                        >
+                                            💬 Chat
+                                        </button>
                                     </div>
                                 </div>
 

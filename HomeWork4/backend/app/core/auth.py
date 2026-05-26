@@ -60,3 +60,25 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
             detail=f"Authentication failed: {str(e)}",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+def verify_token_raw(token: str) -> dict:
+    """Validate a raw JWT string — used by WebSocket endpoints that can't use HTTPBearer."""
+    try:
+        unverified_header = jwt.get_unverified_header(token)
+        jwks = get_jwks()
+        rsa_key = {}
+        for key in jwks["keys"]:
+            if key["kid"] == unverified_header["kid"]:
+                rsa_key = key
+                break
+        if not rsa_key:
+            raise ValueError("Public key not found")
+        return jwt.decode(
+            token,
+            rsa_key,
+            algorithms=["RS256"],
+            audience=settings.ENTRA_CLIENT_ID,
+            options={"verify_iss": False},
+        )
+    except Exception as e:
+        raise ValueError(f"Invalid token: {e}")
