@@ -61,6 +61,7 @@ def create_booking(
     # safe even if Service Bus is unavailable; we log and swallow the publish
     # error so the API contract isn't tied to Service Bus uptime.
     event = {
+        "event_type": "booking.created",
         "bookingId": booking.id,
         "contractorEmail": contractor.email,
         "clientEmail": client.email,
@@ -200,7 +201,7 @@ def update_booking_status(booking_id: int, payload: StatusPayload, token_payload
     return booking
 
 @router.patch("/{booking_id}/reschedule", response_model=BookingRead)
-def reschedule_booking(booking_id: int, payload: ReschedulePayload, token_payload: dict = Depends(verify_token), session: Session = Depends(get_session)):
+def reschedule_booking(booking_id: int, payload: ReschedulePayload, token_payload: dict = Depends(verify_token), session: Session = Depends(get_session), publisher: ServiceBusPublisher = Depends(get_service_bus_publisher)):
     """Allows a contractor to change the scheduled time of a pending or confirmed booking."""
     entra_id = token_payload.get("oid") or token_payload.get("sub")
     user = session.exec(select(User).where(User.entra_id == entra_id)).first()
@@ -224,5 +225,21 @@ def reschedule_booking(booking_id: int, payload: ReschedulePayload, token_payloa
     if client_user:
         entry.client_email = client_user.email
         entry.client_name = client_user.display_name
-    # TODO: publish booking.rescheduled event to Service Bus to email the client
+
+    contractor_profile = session.exec(
+        select(ContractorProfile).where(ContractorProfile.user_id == user.id)
+    ).first()
+    event = {
+        "event_type": "booking.rescheduled",
+        "bookingId": booking.id,
+        "clientEmail": client_user.email if client_user else None,
+        "contractorName": (contractor_profile.display_name if contractor_profile else None) or user.display_name or user.email,
+        "newDate": booking.scheduled_at.isoformat(),
+        "serviceType": booking.service_type,
+    }
+    try:
+        publisher.publish(event, subject="booking.rescheduled")
+    except Exception:
+        logger.exception("Failed to publish booking.rescheduled event for booking %s", booking.id)
+
     return entry

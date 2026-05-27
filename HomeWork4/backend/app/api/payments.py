@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from datetime import datetime, timezone
@@ -7,6 +8,9 @@ from app.core.auth import verify_token
 from app.core.config import settings
 from app.models.domain import User, Booking, ContractorProfile, Payment, PaymentStatus, UserRole, BookingStatus
 from app.schemas.payment import PaymentRead, PaymentQuote, PaymentRevise
+from app.services.service_bus import ServiceBusPublisher, get_service_bus_publisher
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/payments", tags=["payments"])
 
@@ -16,6 +20,7 @@ def set_quote(
     data: PaymentQuote,
     token_payload: dict = Depends(verify_token),
     session: Session = Depends(get_session),
+    publisher: ServiceBusPublisher = Depends(get_service_bus_publisher),
 ):
     """Contractor sets or updates the price quote for a pending booking."""
     entra_id = token_payload.get("oid") or token_payload.get("sub")
@@ -50,6 +55,25 @@ def set_quote(
 
     session.commit()
     session.refresh(payment)
+
+    client_user = session.get(User, booking.client_id)
+    contractor_profile = session.exec(
+        select(ContractorProfile).where(ContractorProfile.user_id == user.id)
+    ).first()
+    event = {
+        "event_type": "payment.quoted",
+        "bookingId": booking.id,
+        "clientEmail": client_user.email if client_user else None,
+        "contractorName": (contractor_profile.display_name if contractor_profile else None) or user.display_name or user.email,
+        "amount": payment.quoted_amount,
+        "date": booking.scheduled_at.isoformat(),
+        "serviceType": booking.service_type,
+    }
+    try:
+        publisher.publish(event, subject="payment.quoted")
+    except Exception:
+        logger.exception("Failed to publish payment.quoted event for booking %s", booking.id)
+
     return payment
 
 
@@ -151,6 +175,7 @@ def release_payment(
     booking_id: int,
     token_payload: dict = Depends(verify_token),
     session: Session = Depends(get_session),
+    publisher: ServiceBusPublisher = Depends(get_service_bus_publisher),
 ):
     """Client confirms completion and releases escrowed funds to the contractor."""
     entra_id = token_payload.get("oid") or token_payload.get("sub")
@@ -181,4 +206,24 @@ def release_payment(
 
     session.commit()
     session.refresh(payment)
+
+    contractor_user = session.get(User, booking.contractor_id)
+    event = {
+        "event_type": "payment.released",
+        "bookingId": booking.id,
+        "clientEmail": user.email,
+        "contractorEmail": contractor_user.email if contractor_user else None,
+        "clientName": user.display_name or user.email,
+        "contractorName": (contractor_profile.display_name if contractor_profile else None) or (contractor_user.display_name if contractor_user else "Your contractor"),
+        "finalAmount": payment.final_amount,
+        "platformFee": payment.platform_fee,
+        "contractorPayout": payment.contractor_payout,
+        "date": booking.scheduled_at.isoformat(),
+        "serviceType": booking.service_type,
+    }
+    try:
+        publisher.publish(event, subject="payment.released")
+    except Exception:
+        logger.exception("Failed to publish payment.released event for booking %s", booking.id)
+
     return payment

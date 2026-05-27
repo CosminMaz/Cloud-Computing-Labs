@@ -54,11 +54,12 @@ The `--python` flag forces a remote build of native dependencies (matters for `a
 Mirror the backend `.env` (see [`backend/.env.example`](backend/.env.example)):
 
 - `ENTRA_CLIENT_ID`, `ENTRA_TENANT_ID`, `ENTRA_AUTHORITY`
+- `ENTRA_CLIENT_SECRET`, `ENTRA_BACKEND_CLIENT_ID`
 - `FRONTEND_URL` — the deployed Static Web App URL (e.g. `https://...azurestaticapps.net`)
 - `DATABASE_URL`
 - `AZURE_STORAGE_CONNECTION_STRING`, `AZURE_STORAGE_CONTAINER`
 - `AZURE_SERVICE_BUS_CONNECTION_STRING`, `AZURE_SERVICE_BUS_QUEUE`
-- `AZURE_LANGUAGE_ENDPOINT`, `AZURE_LANGUAGE_KEY`, `AZURE_LANGUAGE_PROJECT`, `AZURE_LANGUAGE_DEPLOYMENT`
+- `GEMINI_API_KEY` — Google Gemini API key (free at aistudio.google.com)
 
 Also confirm the App Service has **CORS** allowing the Static Web App URL.
 

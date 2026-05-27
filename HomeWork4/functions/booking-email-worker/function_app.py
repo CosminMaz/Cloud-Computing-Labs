@@ -5,36 +5,43 @@ from email_service import EmailService
 
 app = func.FunctionApp()
 
+_DISPATCH = {
+    "booking.created":    lambda svc, e: svc.send_booking_notification(e),
+    "payment.quoted":     lambda svc, e: svc.send_payment_quoted(e),
+    "booking.rescheduled": lambda svc, e: svc.send_booking_rescheduled(e),
+    "payment.released":   lambda svc, e: svc.send_payment_released(e),
+}
+
 
 @app.service_bus_queue_trigger(
     arg_name="msg",
     queue_name="%SERVICE_BUS_QUEUE_NAME%",
     connection="SERVICE_BUS_CONNECTION",
 )
-def on_booking_created(msg: func.ServiceBusMessage) -> None:
-    """Triggered for every message on the bookings queue. Parses the JSON
-    payload and delegates to EmailService — the SDK call lives there so this
-    function stays a thin adapter (Single Responsibility)."""
+def on_booking_event(msg: func.ServiceBusMessage) -> None:
+    """Routes every message on the bookings queue to the right email handler
+    based on the event_type field in the JSON body."""
     raw_body = msg.get_body().decode("utf-8")
-    logging.info("Received booking event: %s", raw_body)
+    logging.info("Received event: %s", raw_body)
 
     try:
         event = json.loads(raw_body)
     except json.JSONDecodeError:
         logging.exception("Discarding non-JSON message")
-        # Swallow so the message isn't retried forever; for production you'd
-        # route this to a dead-letter queue instead.
+        return
+
+    event_type = event.get("event_type")
+    handler = _DISPATCH.get(event_type)
+    if not handler:
+        logging.warning("Unknown event_type '%s', discarding", event_type)
         return
 
     try:
-        EmailService.from_env().send_booking_notification(event)
-    except Exception as exc:
-        # Log and swallow: returning normally tells Service Bus the message is
-        # "handled" so it won't be retried. In production you'd push failures
-        # to a dead-letter queue or an alerting system instead.
+        handler(EmailService.from_env(), event)
+    except Exception:
         logging.error(
-            "Failed to send booking email for bookingId=%s: %s",
-            event.get("bookingId"),
-            exc,
+            "Failed to handle %s for bookingId=%s",
+            event_type, event.get("bookingId"),
+            exc_info=True,
         )
 
