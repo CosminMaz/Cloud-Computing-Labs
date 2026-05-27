@@ -10,14 +10,14 @@ from app.core.database import engine
 from app.models.domain import User, UserRole, ContractorProfile, Review
 
 FAKE_REVIEWERS = [
-    ("Maria Popescu",     "seed_maria@fake.dev"),
-    ("Andrei Ionescu",    "seed_andrei@fake.dev"),
-    ("Elena Constantin",  "seed_elena@fake.dev"),
-    ("Mihai Dumitrescu",  "seed_mihai@fake.dev"),
-    ("Ana Popa",          "seed_ana@fake.dev"),
-    ("George Stancu",     "seed_george@fake.dev"),
-    ("Ioana Marin",       "seed_ioana@fake.dev"),
-    ("Vlad Georgescu",    "seed_vlad@fake.dev"),
+    ("Maria Popescu",     "seed_maria@fake.invalid"),
+    ("Andrei Ionescu",    "seed_andrei@fake.invalid"),
+    ("Elena Constantin",  "seed_elena@fake.invalid"),
+    ("Mihai Dumitrescu",  "seed_mihai@fake.invalid"),
+    ("Ana Popa",          "seed_ana@fake.invalid"),
+    ("George Stancu",     "seed_george@fake.invalid"),
+    ("Ioana Marin",       "seed_ioana@fake.invalid"),
+    ("Vlad Georgescu",    "seed_vlad@fake.invalid"),
 ]
 
 COMMENTS = [
