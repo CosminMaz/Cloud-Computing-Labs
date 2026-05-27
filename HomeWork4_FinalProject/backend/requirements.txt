@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+sqlmodel
+python-dotenv
+python-jose
+httpx
+pymssql
+azure-storage-blob
+azure-servicebus
+python-multipart
+google-generativeai

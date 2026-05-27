@@ -1,0 +1,35 @@
+from typing import Optional, TYPE_CHECKING
+from datetime import datetime
+from sqlmodel import SQLModel
+from app.models.domain import BookingStatus
+from app.schemas.payment import PaymentRead
+
+class BookingCreate(SQLModel):
+    contractor_id: int
+    scheduled_at: datetime
+    service_type: str
+    service_address: Optional[str] = None
+    client_phone: Optional[str] = None
+    notes: Optional[str] = None
+
+class BookingRead(SQLModel):
+    id: int
+    client_id: int
+    contractor_id: int
+    status: BookingStatus
+    scheduled_at: datetime
+    service_type: Optional[str] = None
+    service_address: Optional[str] = None
+    client_phone: Optional[str] = None
+    notes: Optional[str] = None
+    created_at: datetime
+    contractor_display_name: Optional[str] = None
+    contractor_phone: Optional[str] = None
+    contractor_contact_email: Optional[str] = None
+    contractor_profile_image_url: Optional[str] = None
+    contractor_profile_id: Optional[int] = None
+    contractor_notes: Optional[str] = None
+    cancelled_by: Optional[str] = None
+    client_email: Optional[str] = None
+    client_name: Optional[str] = None
+    payment: Optional[PaymentRead] = None
